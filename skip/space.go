@@ -1,8 +1,8 @@
 package skip
 
 import (
-	"unicode"
 	"github.com/modern-go/parse"
+	"unicode"
 )
 
 func Space(src *parse.Source) int {

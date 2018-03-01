@@ -1,12 +1,12 @@
 package parse_test
 
 import (
-	"testing"
-	"github.com/modern-go/test"
-	"github.com/modern-go/test/must"
-	"github.com/modern-go/parse"
 	"bytes"
 	"context"
+	"github.com/modern-go/parse"
+	"github.com/modern-go/test"
+	"github.com/modern-go/test/must"
+	"testing"
 )
 
 func TestSource_PeekRune(t *testing.T) {

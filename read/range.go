@@ -1,8 +1,8 @@
 package read
 
 import (
-	"unicode"
 	"github.com/modern-go/parse"
+	"unicode"
 )
 
 func UnicodeRange(src *parse.Source, space []rune, table *unicode.RangeTable) []rune {

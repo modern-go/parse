@@ -1,11 +1,11 @@
 package parse
 
 import (
-	"io"
 	"errors"
-	"github.com/modern-go/loglog"
-	"unicode/utf8"
+	"github.com/modern-go/concurrent"
+	"io"
 	"reflect"
+	"unicode/utf8"
 )
 
 func String(input string, lexer Lexer) (interface{}, error) {
@@ -26,9 +26,9 @@ func Parse(src *Source, lexer Lexer, precedence int) interface{} {
 		src.ReportError(errors.New("can not parse"))
 		return nil
 	}
-	loglog.Message("prefix", ">>>", reflect.TypeOf(token))
+	concurrent.InfoLogger.Println("prefix", ">>>", reflect.TypeOf(token))
 	left := token.PrefixParse(src)
-	loglog.Message("prefix", "<<<", reflect.TypeOf(token))
+	concurrent.InfoLogger.Println("prefix", "<<<", reflect.TypeOf(token))
 	for {
 		if src.Error() != nil {
 			return left
@@ -38,12 +38,12 @@ func Parse(src *Source, lexer Lexer, precedence int) interface{} {
 			return left
 		}
 		if precedence >= infixPrecedence {
-			loglog.Message("precedence skip ", reflect.TypeOf(token), precedence, infixPrecedence)
+			concurrent.InfoLogger.Println("precedence skip ", reflect.TypeOf(token), precedence, infixPrecedence)
 			return left
 		}
-		loglog.Message("infix ", ">>>", reflect.TypeOf(token))
+		concurrent.InfoLogger.Println("infix ", ">>>", reflect.TypeOf(token))
 		left = token.InfixParse(src, left)
-		loglog.Message("infix ", "<<<", reflect.TypeOf(token))
+		concurrent.InfoLogger.Println("infix ", "<<<", reflect.TypeOf(token))
 	}
 	return left
 }

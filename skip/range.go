@@ -1,8 +1,8 @@
 package skip
 
 import (
-	"unicode"
 	"github.com/modern-go/parse"
+	"unicode"
 )
 
 func UnicodeRange(src *parse.Source, table *unicode.RangeTable) int {

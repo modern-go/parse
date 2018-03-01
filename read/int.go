@@ -1,10 +1,10 @@
 package read
 
 import (
-	"strconv"
 	"errors"
-	"math"
 	"github.com/modern-go/parse"
+	"math"
+	"strconv"
 )
 
 var intDigits []int8

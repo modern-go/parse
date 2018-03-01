@@ -1,13 +1,13 @@
 package read_test
 
 import (
-	"testing"
-	"github.com/modern-go/test"
-	"unicode"
-	"github.com/modern-go/parse/read"
-	"github.com/modern-go/parse"
-	"github.com/modern-go/test/must"
 	"context"
+	"github.com/modern-go/parse"
+	"github.com/modern-go/parse/read"
+	"github.com/modern-go/test"
+	"github.com/modern-go/test/must"
+	"testing"
+	"unicode"
 )
 
 func TestUnicodeRanges(t *testing.T) {

@@ -1,13 +1,13 @@
 package test
 
 import (
-	"testing"
+	"context"
+	"github.com/modern-go/parse"
+	"github.com/modern-go/parse/read"
 	"github.com/modern-go/test"
 	"github.com/modern-go/test/must"
-	"github.com/modern-go/parse"
 	"io"
-	"github.com/modern-go/parse/read"
-	"context"
+	"testing"
 )
 
 func Test(t *testing.T) {

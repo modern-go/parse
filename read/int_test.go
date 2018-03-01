@@ -1,14 +1,14 @@
 package read_test
 
 import (
-	"testing"
+	"context"
+	"github.com/modern-go/parse"
+	"github.com/modern-go/parse/read"
 	"github.com/modern-go/test"
 	"github.com/modern-go/test/must"
 	"io"
 	"strings"
-	"github.com/modern-go/parse"
-	"github.com/modern-go/parse/read"
-	"context"
+	"testing"
 )
 
 func Test_ConsumeUint64_from_string(t *testing.T) {
