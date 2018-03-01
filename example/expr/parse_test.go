@@ -17,6 +17,10 @@ func Test(t *testing.T) {
 		must.Equal(io.EOF, src.Error())
 		must.Equal(2, dst)
 	}))
+	t.Run("－1＋2", test.Case(func(ctx context.Context) {
+		src := parse.NewSourceString(`-1+2`)
+		must.Equal(1, expr.Parse(src, 0))
+	}))
 	t.Run("1＋1－1", test.Case(func(ctx context.Context) {
 		src := parse.NewSourceString(`1+1-1`)
 		must.Equal(1, expr.Parse(src, 0))
@@ -82,6 +86,8 @@ func (lexer *exprLexer) PrefixToken(src *parse.Source) parse.PrefixToken {
 	switch src.Peek1() {
 	case '(':
 		return lexer.group
+	case '-':
+		return lexer.minus
 	default:
 		return lexer.value
 	}
@@ -105,6 +111,12 @@ func (token *plusToken) InfixParse(src *parse.Source, left interface{}) interfac
 }
 
 type minusToken struct {
+}
+
+func (token *minusToken) PrefixParse(src *parse.Source) interface{} {
+	src.Consume1('-')
+	expr := expr.Parse(src, precedencePrefix).(int)
+	return -expr
 }
 
 func (token *minusToken) InfixParse(src *parse.Source, left interface{}) interface{} {
