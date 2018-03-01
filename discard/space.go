@@ -1,4 +1,4 @@
-package skip
+package discard
 
 import (
 	"github.com/modern-go/parse"
