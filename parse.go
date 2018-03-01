@@ -2,9 +2,9 @@ package parse
 
 import (
 	"errors"
+	"github.com/modern-go/concurrent"
 	"io"
 	"reflect"
-	"github.com/modern-go/concurrent"
 )
 
 func String(input string, lexer Lexer) (interface{}, error) {

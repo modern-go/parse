@@ -1,8 +1,8 @@
 package parse
 
 import (
-	"log"
 	"io/ioutil"
+	"log"
 )
 
 // InfoLogger is used to print informational message, default to off

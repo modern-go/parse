@@ -1,6 +1,7 @@
 package parse_test
 
 import (
+	"bytes"
 	"context"
 	"github.com/modern-go/parse"
 	"github.com/modern-go/test"
@@ -8,7 +9,6 @@ import (
 	"io"
 	"strings"
 	"testing"
-	"bytes"
 )
 
 func TestSource_Savepoint(t *testing.T) {
