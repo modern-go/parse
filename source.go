@@ -1,0 +1,172 @@
+package parse
+
+import (
+	"errors"
+	"io"
+	"unicode/utf8"
+)
+
+type savepoint struct {
+	name     string
+	current  []byte
+	nextList [][]byte
+}
+
+type Source struct {
+	err            error
+	reader         io.Reader
+	current        []byte
+	nextList       [][]byte
+	buf            []byte
+	savepointStack []*savepoint
+	Attachment     interface{}
+}
+
+func NewSource(reader io.Reader, buf []byte) (*Source, error) {
+	n, err := reader.Read(buf)
+	if n == 0 {
+		return nil, err
+	}
+	return &Source{
+		reader:  reader,
+		current: buf[:n],
+		buf:     buf,
+	}, nil
+}
+
+func NewSourceString(src string) *Source {
+	return &Source{
+		current: []byte(src),
+	}
+}
+
+func (src *Source) SetBuffer(buf []byte) {
+	src.buf = buf
+}
+
+func (src *Source) Savepoint(savepointName string) {
+	if src.Error() != nil {
+		return
+	}
+	for _, savepoint := range src.savepointStack {
+		if savepoint.name == savepointName {
+			src.ReportError(errors.New("savepoint name has already been used: " + savepointName))
+			return
+		}
+	}
+	src.savepointStack = append(src.savepointStack, &savepoint{
+		name:    savepointName,
+		current: src.current,
+	})
+}
+
+func (src *Source) RollbackTo(savepointName string) {
+	for i, savepoint := range src.savepointStack {
+		if savepoint.name == savepointName {
+			src.current = src.savepointStack[i].current
+			src.nextList = src.savepointStack[i].nextList
+			src.savepointStack = src.savepointStack[:i]
+			src.err = nil
+			return
+		}
+	}
+	src.ReportError(errors.New("savepoint not found: " + savepointName))
+}
+
+func (src *Source) Peek() []byte {
+	return src.current
+}
+
+func (src *Source) Peek1() byte {
+	return src.current[0]
+}
+
+func (src *Source) PeekN(n int) ([]byte, error) {
+	if n <= len(src.current) {
+		return src.current[:n], nil
+	}
+	if src.reader == nil {
+		return src.current, io.EOF
+	}
+	src.Savepoint("Peek")
+	peeked := src.current
+	src.Consume()
+	for {
+		peeked = append(peeked, src.current...)
+		if len(peeked) >= n {
+			src.RollbackTo("Peek")
+			return peeked[:n], nil
+		}
+		if src.Error() != nil {
+			src.RollbackTo("Peek")
+			return peeked, src.Error()
+		}
+		src.Consume()
+	}
+}
+
+func (src *Source) ConsumeN(n int) {
+	for n != 0 && n >= len(src.current) {
+		n -= len(src.current)
+		src.Consume()
+	}
+	src.current = src.current[n:]
+}
+
+func (src *Source) Consume1(b1 byte) {
+	if b1 != src.current[0] {
+		src.ReportError(errors.New(
+			"expect " + string([]byte{b1}) +
+				" but found " + string([]byte{src.current[0]})))
+	}
+	src.ConsumeN(1)
+}
+
+func (src *Source) Consume() {
+	if src.reader == nil {
+		src.current = nil
+		src.ReportError(io.EOF)
+		return
+	}
+	if len(src.nextList) != 0 {
+		src.current = src.nextList[0]
+		src.nextList = src.nextList[1:]
+		return
+	}
+	if len(src.savepointStack) > 0 {
+		src.buf = make([]byte, len(src.buf))
+	}
+	n, err := src.reader.Read(src.buf)
+	if err != nil {
+		src.ReportError(err)
+	}
+	src.current = src.buf[:n]
+	for _, savepoint := range src.savepointStack {
+		savepoint.nextList = append(savepoint.nextList, src.current)
+	}
+}
+
+func (src *Source) PeekRune() (rune, int) {
+	n := len(src.current)
+	if n < 1 {
+		return utf8.RuneError, 1
+	}
+	p0 := src.current[0]
+	x := first[p0]
+	if x >= as {
+		return utf8.DecodeRune(src.current)
+	}
+	sz := x & 7
+	fullBuf, _ := src.PeekN(int(sz))
+	return utf8.DecodeRune(fullBuf)
+}
+
+func (src *Source) ReportError(err error) {
+	if src.err == nil {
+		src.err = err
+	}
+}
+
+func (src *Source) Error() error {
+	return src.err
+}
