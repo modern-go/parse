@@ -11,7 +11,7 @@ pratt parser framework, implements https://tdop.github.io/
 
 * the main parse loop: plugin in your lexer and token, we can parse anything
 * a look-ahead parser source can read byte by byte, or rune by rune
-* reusable parsing sub-routines to read or discard frequently used sequence types, like space, numeric
+* reusable parsing sub-routines to `read` or `discard` frequently used sequence types, like space, numeric
 
 here is an example
 

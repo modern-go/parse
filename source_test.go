@@ -189,3 +189,16 @@ func TestSource_SetBuffer(t *testing.T) {
 		must.Equal([]byte{'a', 'b'}, peeked)
 	}))
 }
+
+func TestSource_PeekUtf8(t *testing.T) {
+	t.Run("rune in multiple buf", test.Case(func(ctx context.Context) {
+		src, _ := parse.NewSource(bytes.NewBufferString("h"), make([]byte, 1))
+		must.Equal([]byte("h"), must.Call(src.PeekUtf8)[0])
+		src, _ = parse.NewSource(bytes.NewReader([]byte{0xC2, 0xA2}), make([]byte, 1))
+		must.Equal([]byte("¢"), must.Call(src.PeekUtf8)[0])
+		src = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
+		must.Equal([]byte("€"), must.Call(src.PeekUtf8)[0])
+		src = parse.NewSourceString(string([]byte{0xF0, 0x90, 0x8D, 0x88}))
+		must.Equal([]byte("𐍈"), must.Call(src.PeekUtf8)[0])
+	}))
+}

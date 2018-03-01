@@ -152,10 +152,6 @@ func (src *Source) Consume() {
 }
 
 func (src *Source) PeekRune() (rune, int) {
-	n := len(src.current)
-	if n < 1 {
-		return utf8.RuneError, 1
-	}
 	p0 := src.current[0]
 	x := first[p0]
 	if x >= as {
@@ -164,6 +160,18 @@ func (src *Source) PeekRune() (rune, int) {
 	sz := x & 7
 	fullBuf, _ := src.PeekN(int(sz))
 	return utf8.DecodeRune(fullBuf)
+}
+
+// PeekUtf8 read one full code point without decoding into rune
+func (src *Source) PeekUtf8() ([]byte, int) {
+	p0 := src.current[0]
+	x := first[p0]
+	if x >= as {
+		return src.current[:1], 1
+	}
+	sz := int(x & 7)
+	fullBuf, _ := src.PeekN(sz)
+	return fullBuf, sz
 }
 
 func (src *Source) ReportError(err error) {
