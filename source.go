@@ -163,15 +163,15 @@ func (src *Source) PeekRune() (rune, int) {
 }
 
 // PeekUtf8 read one full code point without decoding into rune
-func (src *Source) PeekUtf8() ([]byte, int) {
+func (src *Source) PeekUtf8() []byte {
 	p0 := src.current[0]
 	x := first[p0]
 	if x >= as {
-		return src.current[:1], 1
+		return src.current[:1]
 	}
 	sz := int(x & 7)
 	fullBuf, _ := src.PeekN(sz)
-	return fullBuf, sz
+	return fullBuf
 }
 
 func (src *Source) ReportError(err error) {
