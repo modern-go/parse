@@ -2,9 +2,9 @@ package parse
 
 import (
 	"errors"
-	"github.com/modern-go/concurrent"
 	"io"
 	"reflect"
+	"github.com/modern-go/concurrent"
 )
 
 func String(input string, lexer Lexer) (interface{}, error) {
@@ -25,9 +25,9 @@ func Parse(src *Source, lexer Lexer, precedence int) interface{} {
 		src.ReportError(errors.New("can not parse"))
 		return nil
 	}
-	concurrent.InfoLogger.Println("prefix", ">>>", reflect.TypeOf(token))
+	InfoLogger.Println("prefix", ">>>", reflect.TypeOf(token))
 	left := token.PrefixParse(src)
-	concurrent.InfoLogger.Println("prefix", "<<<", reflect.TypeOf(token))
+	InfoLogger.Println("prefix", "<<<", reflect.TypeOf(token))
 	for {
 		if src.Error() != nil {
 			return left

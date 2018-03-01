@@ -34,10 +34,14 @@ func NewSource(reader io.Reader, buf []byte) (*Source, error) {
 	}, nil
 }
 
-func NewSourceString(src string) *Source {
-	return &Source{
-		current: []byte(src),
+func NewSourceString(str string) *Source {
+	src := &Source{
+		current: []byte(str),
 	}
+	if len(str) == 0 {
+		src.ReportError(errors.New("source string is empty"))
+	}
+	return src
 }
 
 func (src *Source) SetBuffer(buf []byte) {
@@ -98,8 +102,9 @@ func (src *Source) PeekN(n int) ([]byte, error) {
 			return peeked[:n], nil
 		}
 		if src.Error() != nil {
+			err := src.Error()
 			src.RollbackTo("Peek")
-			return peeked, src.Error()
+			return peeked, err
 		}
 		src.Consume()
 	}

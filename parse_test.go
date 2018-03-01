@@ -1,33 +1,50 @@
 package parse_test
 
 import (
-	"bytes"
+	"testing"
+	"github.com/modern-go/test"
 	"context"
 	"github.com/modern-go/parse"
-	"github.com/modern-go/test"
 	"github.com/modern-go/test/must"
-	"testing"
 )
 
-func TestSource_PeekRune(t *testing.T) {
-	t.Run("rune in current buf", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("h")
-		must.Equal('h', must.Call(src.PeekRune)[0])
-		src = parse.NewSourceString(string([]byte{0xC2, 0xA2}))
-		must.Equal('¢', must.Call(src.PeekRune)[0])
-		src = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
-		must.Equal('€', must.Call(src.PeekRune)[0])
-		src = parse.NewSourceString(string([]byte{0xF0, 0x90, 0x8D, 0x88}))
-		must.Equal('𐍈', must.Call(src.PeekRune)[0])
+func TestString(t *testing.T) {
+	t.Run("no error", test.Case(func(ctx context.Context) {
+		parsed := must.Call(parse.String, "abc", &myLexer{})[0]
+		must.Equal(uint8('a'), parsed)
 	}))
-	t.Run("rune in multiple buf", test.Case(func(ctx context.Context) {
-		src, _ := parse.NewSource(bytes.NewBufferString("h"), make([]byte, 1))
-		must.Equal('h', must.Call(src.PeekRune)[0])
-		src, _ = parse.NewSource(bytes.NewReader([]byte{0xC2, 0xA2}), make([]byte, 1))
-		must.Equal('¢', must.Call(src.PeekRune)[0])
-		src = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
-		must.Equal('€', must.Call(src.PeekRune)[0])
-		src = parse.NewSourceString(string([]byte{0xF0, 0x90, 0x8D, 0x88}))
-		must.Equal('𐍈', must.Call(src.PeekRune)[0])
+	t.Run("can not parse", test.Case(func(ctx context.Context) {
+		parsed, err := parse.String("bc", &myLexer{})
+		must.NotNil(err)
+		must.Nil(parsed)
 	}))
+	t.Run("EOF", test.Case(func(ctx context.Context) {
+		parsed := must.Call(parse.String, "a", &myLexer{})[0]
+		must.Equal(uint8('a'), parsed)
+	}))
+}
+
+type myLexer struct {
+}
+
+func (lexer *myLexer) PrefixToken(src *parse.Source) parse.PrefixToken {
+	switch src.Peek1() {
+	case 'a':
+		return &myToken{}
+	default:
+		return nil
+	}
+}
+
+func (lexer *myLexer) InfixToken(src *parse.Source) (parse.InfixToken, int) {
+	return nil, 0
+}
+
+type myToken struct {
+}
+
+func (token *myToken) PrefixParse(src *parse.Source) interface{} {
+	b := src.Peek1()
+	src.ConsumeN(1)
+	return b
 }
