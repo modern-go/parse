@@ -29,6 +29,10 @@ func Test(t *testing.T) {
 		src := parse.NewSourceString(`4/2+1`)
 		must.Equal(3, expr.Parse(src, 0))
 	}))
+	t.Run("4/（1＋1）＋2", test.Case(func(ctx context.Context) {
+		src := parse.NewSourceString(`4/(1+1)+2`)
+		must.Equal(4, expr.Parse(src, 0))
+	}))
 }
 
 const precedenceAssignment = 1
@@ -46,6 +50,7 @@ type exprLexer struct {
 	minus    *minusToken
 	multiply *multiplyToken
 	divide   *divideToken
+	group    *groupToken
 }
 
 var expr = newExprLexer()
@@ -59,7 +64,7 @@ func (lexer *exprLexer) Parse(src *parse.Source, precedence int) interface{} {
 }
 
 func (lexer *exprLexer) InfixToken(src *parse.Source) (parse.InfixToken, int) {
-	switch src.Peek()[0] {
+	switch src.Peek1() {
 	case '+':
 		return lexer.plus, precedenceSum
 	case '-':
@@ -74,7 +79,12 @@ func (lexer *exprLexer) InfixToken(src *parse.Source) (parse.InfixToken, int) {
 }
 
 func (lexer *exprLexer) PrefixToken(src *parse.Source) parse.PrefixToken {
-	return lexer.value
+	switch src.Peek1() {
+	case '(':
+		return lexer.group
+	default:
+		return lexer.value
+	}
 }
 
 type valueToken struct {
@@ -89,7 +99,7 @@ type plusToken struct {
 
 func (token *plusToken) InfixParse(src *parse.Source, left interface{}) interface{} {
 	leftValue := left.(int)
-	src.ConsumeN(1)
+	src.Consume1('+')
 	rightValue := expr.Parse(src, precedenceSum).(int)
 	return leftValue + rightValue
 }
@@ -99,7 +109,7 @@ type minusToken struct {
 
 func (token *minusToken) InfixParse(src *parse.Source, left interface{}) interface{} {
 	leftValue := left.(int)
-	src.ConsumeN(1)
+	src.Consume1('-')
 	rightValue := expr.Parse(src, precedenceSum).(int)
 	return leftValue - rightValue
 }
@@ -109,7 +119,7 @@ type multiplyToken struct {
 
 func (token *multiplyToken) InfixParse(src *parse.Source, left interface{}) interface{} {
 	leftValue := left.(int)
-	src.ConsumeN(1)
+	src.Consume1('*')
 	rightValue := expr.Parse(src, precedenceProduct).(int)
 	return leftValue * rightValue
 }
@@ -119,7 +129,17 @@ type divideToken struct {
 
 func (token *divideToken) InfixParse(src *parse.Source, left interface{}) interface{} {
 	leftValue := left.(int)
-	src.ConsumeN(1)
+	src.Consume1('/')
 	rightValue := expr.Parse(src, precedenceProduct).(int)
 	return leftValue / rightValue
+}
+
+type groupToken struct {
+}
+
+func (token *groupToken) PrefixParse(src *parse.Source) interface{} {
+	src.Consume1('(')
+	expr := expr.Parse(src, 0)
+	src.Consume1(')')
+	return expr
 }
