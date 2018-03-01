@@ -22,6 +22,7 @@ func init() {
 	}
 }
 
+// Int read int with base 10
 func Int(src *parse.Source) int {
 	if strconv.IntSize == 32 {
 		return int(Int32(src))
@@ -29,6 +30,7 @@ func Int(src *parse.Source) int {
 	return int(Int64(src))
 }
 
+// Int32 read int32 with base 10
 func Int32(src *parse.Source) int32 {
 	c := src.Peek()[0]
 	if c == '-' {
@@ -48,6 +50,7 @@ func Int32(src *parse.Source) int32 {
 	return int32(val)
 }
 
+// Int64 read int64 with base 10
 func Int64(src *parse.Source) int64 {
 	c := src.Peek()[0]
 	if c == '-' {
@@ -67,6 +70,7 @@ func Int64(src *parse.Source) int64 {
 	return int64(val)
 }
 
+// Uint64 read uint64 with base 10
 func Uint64(src *parse.Source) uint64 {
 	value := uint64(0)
 	for src.Error() == nil {

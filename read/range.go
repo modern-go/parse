@@ -5,6 +5,7 @@ import (
 	"unicode"
 )
 
+// UnicodeRange read unicode until one not in table
 func UnicodeRange(src *parse.Source, space []rune, table *unicode.RangeTable) []rune {
 	for {
 		r, n := src.PeekRune()
@@ -17,6 +18,7 @@ func UnicodeRange(src *parse.Source, space []rune, table *unicode.RangeTable) []
 	}
 }
 
+// UnicodeRanges read unicode until one not in included table or encountered one in excluded table
 func UnicodeRanges(src *parse.Source, space []rune, includes []*unicode.RangeTable, excludes []*unicode.RangeTable) []rune {
 	for {
 		r, n := src.PeekRune()
