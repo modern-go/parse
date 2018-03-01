@@ -25,6 +25,10 @@ func Test(t *testing.T) {
 		src := parse.NewSourceString(`2*3+1`)
 		must.Equal(7, expr.Parse(src, 0))
 	}))
+	t.Run("4/2＋1", test.Case(func(ctx context.Context) {
+		src := parse.NewSourceString(`4/2+1`)
+		must.Equal(3, expr.Parse(src, 0))
+	}))
 }
 
 const precedenceAssignment = 1
@@ -41,17 +45,13 @@ type exprLexer struct {
 	plus     *plusToken
 	minus    *minusToken
 	multiply *multiplyToken
+	divide   *divideToken
 }
 
 var expr = newExprLexer()
 
 func newExprLexer() *exprLexer {
-	return &exprLexer{
-		value:    &valueToken{},
-		plus:     &plusToken{},
-		minus:    &minusToken{},
-		multiply: &multiplyToken{},
-	}
+	return &exprLexer{}
 }
 
 func (lexer *exprLexer) Parse(src *parse.Source, precedence int) interface{} {
@@ -66,6 +66,8 @@ func (lexer *exprLexer) InfixToken(src *parse.Source) (parse.InfixToken, int) {
 		return lexer.minus, precedenceSum
 	case '*':
 		return lexer.multiply, precedenceProduct
+	case '/':
+		return lexer.divide, precedenceProduct
 	default:
 		return nil, 0
 	}
@@ -110,4 +112,14 @@ func (token *multiplyToken) InfixParse(src *parse.Source, left interface{}) inte
 	src.ConsumeN(1)
 	rightValue := expr.Parse(src, precedenceProduct).(int)
 	return leftValue * rightValue
+}
+
+type divideToken struct {
+}
+
+func (token *divideToken) InfixParse(src *parse.Source, left interface{}) interface{} {
+	leftValue := left.(int)
+	src.ConsumeN(1)
+	rightValue := expr.Parse(src, precedenceProduct).(int)
+	return leftValue / rightValue
 }
