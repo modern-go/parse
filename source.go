@@ -12,6 +12,11 @@ type savepoint struct {
 	nextList [][]byte
 }
 
+// Source is generalization of io.Reader and []byte.
+// It supports read ahead.
+// It supports read byte by byte.
+// It supports read unicode code point by code point (as rune or []byte).
+// It supports savepoint and rollback.
 type Source struct {
 	err            error
 	reader         io.Reader
@@ -22,6 +27,8 @@ type Source struct {
 	Attachment     interface{}
 }
 
+// NewSource construct a source from io.Reader.
+// At least one byte should be read from the io.Reader, otherwise error will be returned.
 func NewSource(reader io.Reader, buf []byte) (*Source, error) {
 	n, err := reader.Read(buf)
 	if n == 0 {
@@ -34,6 +41,7 @@ func NewSource(reader io.Reader, buf []byte) (*Source, error) {
 	}, nil
 }
 
+// NewSourceString construct a source from string. Len should >= 1.
 func NewSourceString(str string) *Source {
 	src := &Source{
 		current: []byte(str),
@@ -44,10 +52,25 @@ func NewSourceString(str string) *Source {
 	return src
 }
 
+// NewSourceString construct a source from []byte. Len should >= 1.
+func NewSourceBytes(buf []byte) *Source {
+	src := &Source{
+		current: buf,
+	}
+	if len(buf) == 0 {
+		src.ReportError(errors.New("source bytes is empty"))
+	}
+	return src
+}
+
+// SetBuffer will prevent the buffer reuse,
+// so that buffer returned by Peek() can be saved for later use.
 func (src *Source) SetBuffer(buf []byte) {
 	src.buf = buf
 }
 
+// Savepoint mark current position, and start recording.
+// Later we can rollback to current position.
 func (src *Source) Savepoint(savepointName string) {
 	if src.Error() != nil {
 		return
@@ -64,6 +87,8 @@ func (src *Source) Savepoint(savepointName string) {
 	})
 }
 
+// RollbackTo rollback the cursor to previous savepoint.
+// The bytes read from reader will be replayed.
 func (src *Source) RollbackTo(savepointName string) {
 	for i, savepoint := range src.savepointStack {
 		if savepoint.name == savepointName {
@@ -77,14 +102,20 @@ func (src *Source) RollbackTo(savepointName string) {
 	src.ReportError(errors.New("savepoint not found: " + savepointName))
 }
 
+// Peek return the current buffer ready to be parsed.
+// The buffer will have at least one byte.
 func (src *Source) Peek() []byte {
 	return src.current
 }
 
+// Peek1 return the first byte in the buffer to parse.
 func (src *Source) Peek1() byte {
 	return src.current[0]
 }
 
+// PeekN return the first N bytes in the buffer to parse.
+// If N is longer than current buffer, it will read from reader.
+// The cursor will not be moved.
 func (src *Source) PeekN(n int) ([]byte, error) {
 	if n <= len(src.current) {
 		return src.current[:n], nil
@@ -110,6 +141,8 @@ func (src *Source) PeekN(n int) ([]byte, error) {
 	}
 }
 
+// ConsumeN move the cursor N bytes. If N is larger than current buffer,
+// more bytes will read from reader and be discarded.
 func (src *Source) ConsumeN(n int) {
 	for {
 		if n <= len(src.current) {
@@ -130,6 +163,8 @@ func (src *Source) ConsumeN(n int) {
 	}
 }
 
+// CopyN works like ConsumeN.
+// But unlike ConsumeN, it copies the bytes read into new buffer and return.
 func (src *Source) CopyN(space []byte, n int) []byte {
 	for {
 		if n <= len(src.current) {
@@ -152,6 +187,7 @@ func (src *Source) CopyN(space []byte, n int) []byte {
 	}
 }
 
+// Consume1 like ConsumeN, with N == 1
 func (src *Source) Consume1(b1 byte) {
 	if b1 != src.current[0] {
 		src.ReportError(errors.New(
@@ -161,6 +197,7 @@ func (src *Source) Consume1(b1 byte) {
 	src.ConsumeN(1)
 }
 
+// Consume will discard whole current buffer, and read next buffer.
 func (src *Source) Consume() {
 	if src.reader == nil {
 		src.current = nil
@@ -185,6 +222,7 @@ func (src *Source) Consume() {
 	}
 }
 
+// PeekRune read unicode code point as rune, without moving cursor.
 func (src *Source) PeekRune() (rune, int) {
 	p0 := src.current[0]
 	x := first[p0]
@@ -208,16 +246,20 @@ func (src *Source) PeekUtf8() []byte {
 	return fullBuf
 }
 
+// ReportError set the source in error condition.
 func (src *Source) ReportError(err error) {
 	if src.err == nil {
 		src.err = err
 	}
 }
 
+// Error tells if the source is in error condition.
+// EOF is considered as error.
 func (src *Source) Error() error {
 	return src.err
 }
 
+// FatalError tells if the source is in fatal error condition
 func (src *Source) FatalError() error {
 	if src.err == io.EOF {
 		return nil

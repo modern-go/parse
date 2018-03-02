@@ -5,13 +5,13 @@ import (
 	"unicode"
 )
 
+// Space discard ascii spaces
 func Space(src *parse.Source) int {
 	count := 0
 	for src.Error() == nil {
 		buf := src.Peek()
 		for i := 0; i < len(buf); i++ {
-			b := buf[i]
-			switch b {
+			switch buf[i] {
 			case '\t', '\n', '\v', '\f', '\r', ' ':
 				count++
 				continue
@@ -25,6 +25,7 @@ func Space(src *parse.Source) int {
 	return count
 }
 
+// UnicodeSpace discard unicode spaces
 func UnicodeSpace(src *parse.Source) int {
 	count := 0
 	for src.Error() == nil {

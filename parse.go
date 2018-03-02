@@ -7,6 +7,7 @@ import (
 	"reflect"
 )
 
+// String parse the string with provided lexer
 func String(input string, lexer Lexer) (interface{}, error) {
 	src := NewSourceString(input)
 	left := Parse(src, lexer, 0)
@@ -19,6 +20,8 @@ func String(input string, lexer Lexer) (interface{}, error) {
 	return left, nil
 }
 
+// Parse parse the source with provided lexer, might call this recursively.
+// If precedence > 0, some infix will be skipped due to precedence.
 func Parse(src *Source, lexer Lexer, precedence int) interface{} {
 	token := lexer.PrefixToken(src)
 	if token == nil {
@@ -47,16 +50,20 @@ func Parse(src *Source, lexer Lexer, precedence int) interface{} {
 	return left
 }
 
+// DefaultPrecedence should be used when precedence does not matter
 const DefaultPrecedence = 1
 
+// PrefixToken parse the source at prefix position
 type PrefixToken interface {
 	PrefixParse(src *Source) interface{}
 }
 
+// InfixToken parse the source at infix position
 type InfixToken interface {
 	InfixParse(src *Source, left interface{}) interface{}
 }
 
+// Lexer tell the current token in the head of source
 type Lexer interface {
 	PrefixToken(src *Source) PrefixToken
 	InfixToken(src *Source) (InfixToken, int)

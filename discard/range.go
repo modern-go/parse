@@ -5,35 +5,42 @@ import (
 	"unicode"
 )
 
+// UnicodeRange discard the runes until found one not matching the range table
 func UnicodeRange(src *parse.Source, table *unicode.RangeTable) int {
 	count := 0
-	for {
+	for src.Error() == nil {
 		r, n := src.PeekRune()
-		if unicode.Is(table, r) {
-			src.ConsumeN(n)
-			count += n
-			continue
+		if !unicode.Is(table, r) {
+			return count
 		}
-		return count
+		src.ConsumeN(n)
+		count += n
 	}
+	return count
 }
 
+// UnicodeRanges discard the runes until found one not matching the range tables
 func UnicodeRanges(src *parse.Source, includes []*unicode.RangeTable, excludes []*unicode.RangeTable) int {
 	count := 0
-	for {
+	for src.Error() == nil {
 		r, n := src.PeekRune()
-		for _, exclude := range excludes {
-			if unicode.Is(exclude, r) {
-				return count
-			}
+		if matchRanges(excludes, r) {
+			return count
 		}
-		for _, include := range includes {
-			if unicode.Is(include, r) {
-				src.ConsumeN(n)
-				count += n
-				continue
-			}
+		if len(includes) > 0 && !matchRanges(includes, r) {
+			return count
 		}
-		return count
+		src.ConsumeN(n)
+		count += n
 	}
+	return count
+}
+
+func matchRanges(ranges []*unicode.RangeTable, r rune) bool {
+	for _, rng := range ranges {
+		if unicode.Is(rng, r) {
+			return true
+		}
+	}
+	return false
 }
