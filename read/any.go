@@ -20,7 +20,7 @@ func AnyExcept1(src *parse.Source, space []byte, b1 byte) []byte {
 	return space
 }
 
-// AnyExcept1 read any byte except b1 and b2
+// AnyExcept2 read any byte except b1 and b2
 func AnyExcept2(src *parse.Source, space []byte, b1 byte, b2 byte) []byte {
 	for src.Error() == nil {
 		buf := src.Peek()

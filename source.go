@@ -52,17 +52,6 @@ func NewSourceString(str string) *Source {
 	return src
 }
 
-// NewSourceString construct a source from []byte. Len should >= 1.
-func NewSourceBytes(buf []byte) *Source {
-	src := &Source{
-		current: buf,
-	}
-	if len(buf) == 0 {
-		src.ReportError(errors.New("source bytes is empty"))
-	}
-	return src
-}
-
 // SetBuffer will prevent the buffer reuse,
 // so that buffer returned by Peek() can be saved for later use.
 func (src *Source) SetBuffer(buf []byte) {
