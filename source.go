@@ -111,11 +111,45 @@ func (src *Source) PeekN(n int) ([]byte, error) {
 }
 
 func (src *Source) ConsumeN(n int) {
-	for n != 0 && n >= len(src.current) {
+	for {
+		if n <= len(src.current) {
+			src.current = src.current[n:]
+			if len(src.current) == 0 {
+				src.Consume()
+			}
+			return
+		}
+		if src.err != nil {
+			if src.err == io.EOF {
+				src.err = io.ErrUnexpectedEOF
+			}
+			return
+		}
 		n -= len(src.current)
 		src.Consume()
 	}
-	src.current = src.current[n:]
+}
+
+func (src *Source) CopyN(space []byte, n int) []byte {
+	for {
+		if n <= len(src.current) {
+			space = append(space, src.current[:n]...)
+			src.current = src.current[n:]
+			if len(src.current) == 0 {
+				src.Consume()
+			}
+			return space
+		}
+		if src.err != nil {
+			if src.err == io.EOF {
+				src.err = io.ErrUnexpectedEOF
+			}
+			return space
+		}
+		n -= len(src.current)
+		space = append(space, src.current...)
+		src.Consume()
+	}
 }
 
 func (src *Source) Consume1(b1 byte) {
@@ -181,5 +215,12 @@ func (src *Source) ReportError(err error) {
 }
 
 func (src *Source) Error() error {
+	return src.err
+}
+
+func (src *Source) FatalError() error {
+	if src.err == io.EOF {
+		return nil
+	}
 	return src.err
 }

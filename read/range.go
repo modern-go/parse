@@ -3,47 +3,56 @@ package read
 import (
 	"github.com/modern-go/parse"
 	"unicode"
-	"unicode/utf8"
 )
 
 // UnicodeRange read unicode until one not in table,
 // the bytes will be appended to the space passed in.
 // If space is nil, new space will be allocated from heap
 func UnicodeRange(src *parse.Source, space []byte, table *unicode.RangeTable) []byte {
+	src.Savepoint("UnicodeRange")
+	length := 0
 	for src.Error() == nil {
-		buf := src.PeekUtf8()
-		r, _ := utf8.DecodeRune(buf)
-		if unicode.Is(table, r) {
-			space = append(space, buf...)
-			src.ConsumeN(len(buf))
-			continue
+		r, n := src.PeekRune()
+		if !unicode.Is(table, r) {
+			break
 		}
-		return space
+		length += n
+		src.ConsumeN(n)
 	}
-	return space
+	if src.FatalError() != nil {
+		return nil
+	}
+	src.RollbackTo("UnicodeRange")
+	return src.CopyN(space, length)
 }
 
 // UnicodeRanges read unicode until one not in included table or encounteredd one in excluded table
-func UnicodeRanges(src *parse.Source, space []rune, includes []*unicode.RangeTable, excludes []*unicode.RangeTable) []rune {
-	for {
+func UnicodeRanges(src *parse.Source, space []byte, includes []*unicode.RangeTable, excludes []*unicode.RangeTable) []byte {
+	src.Savepoint("UnicodeRanges")
+	length := 0
+	for src.Error() == nil {
 		r, n := src.PeekRune()
-		for _, exclude := range excludes {
-			if unicode.Is(exclude, r) {
-				return space
-			}
+		if matchRanges(excludes, r) {
+			break
 		}
-		if len(includes) == 0 {
-			src.ConsumeN(n)
-			space = append(space, r)
-			continue
+		if len(includes) > 0 && !matchRanges(includes, r) {
+			break
 		}
-		for _, include := range includes {
-			if unicode.Is(include, r) {
-				src.ConsumeN(n)
-				space = append(space, r)
-				continue
-			}
-		}
-		return space
+		length += n
+		src.ConsumeN(n)
 	}
+	if src.FatalError() != nil {
+		return nil
+	}
+	src.RollbackTo("UnicodeRanges")
+	return src.CopyN(space, length)
+}
+
+func matchRanges(ranges []*unicode.RangeTable, r rune) bool {
+	for _, rng := range ranges {
+		if unicode.Is(rng, r) {
+			return true
+		}
+	}
+	return false
 }
