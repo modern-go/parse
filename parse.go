@@ -47,7 +47,6 @@ func Parse(src *Source, lexer Lexer, precedence int) interface{} {
 		left = token.InfixParse(src, left)
 		concurrent.InfoLogger.Println("infix ", "<<<", reflect.TypeOf(token))
 	}
-	return left
 }
 
 // DefaultPrecedence should be used when precedence does not matter
