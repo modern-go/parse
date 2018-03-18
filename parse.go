@@ -2,7 +2,6 @@ package parse
 
 import (
 	"errors"
-	"github.com/modern-go/concurrent"
 	"io"
 	"reflect"
 )
@@ -40,12 +39,12 @@ func Parse(src *Source, lexer Lexer, precedence int) interface{} {
 			return left
 		}
 		if precedence >= infixPrecedence {
-			concurrent.InfoLogger.Println("precedence skip ", reflect.TypeOf(token), precedence, infixPrecedence)
+			InfoLogger.Println("precedence skip ", reflect.TypeOf(token), precedence, infixPrecedence)
 			return left
 		}
-		concurrent.InfoLogger.Println("infix ", ">>>", reflect.TypeOf(token))
+		InfoLogger.Println("infix ", ">>>", reflect.TypeOf(token))
 		left = token.InfixParse(src, left)
-		concurrent.InfoLogger.Println("infix ", "<<<", reflect.TypeOf(token))
+		InfoLogger.Println("infix ", "<<<", reflect.TypeOf(token))
 	}
 }
 
