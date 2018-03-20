@@ -52,6 +52,14 @@ func NewSourceString(str string) *Source {
 	return src
 }
 
+func (src *Source) Reset(reader io.Reader, buf []byte) {
+	src.reader = reader
+	src.current = buf
+	src.buf = buf
+	src.err = nil
+}
+
+
 // SetBuffer will prevent the buffer reuse,
 // so that buffer returned by Peek() can be saved for later use.
 func (src *Source) SetBuffer(buf []byte) {
