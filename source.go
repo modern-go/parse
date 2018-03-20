@@ -59,7 +59,6 @@ func (src *Source) Reset(reader io.Reader, buf []byte) {
 	src.err = nil
 }
 
-
 // SetBuffer will prevent the buffer reuse,
 // so that buffer returned by Peek() can be saved for later use.
 func (src *Source) SetBuffer(buf []byte) {
