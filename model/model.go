@@ -10,6 +10,8 @@ package model
 // text form number => model.Number
 // string => string
 // []byte => []byte
+// bool => bool
+// null => null
 // map => model.Map
 // list/set => model.List
 
