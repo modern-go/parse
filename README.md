@@ -90,7 +90,7 @@ type plusToken struct {
 
 func (token *plusToken) InfixParse(src *parse.Source, left interface{}) interface{} {
 	leftValue := left.(int)
-	src.Consume1('+')
+	src.Expect1('+')
 	rightValue := expr.Parse(src, precedenceSum).(int)
 	return leftValue + rightValue
 }
@@ -99,14 +99,14 @@ type minusToken struct {
 }
 
 func (token *minusToken) PrefixParse(src *parse.Source) interface{} {
-	src.Consume1('-')
+	src.Expect1('-')
 	expr := expr.Parse(src, precedencePrefix).(int)
 	return -expr
 }
 
 func (token *minusToken) InfixParse(src *parse.Source, left interface{}) interface{} {
 	leftValue := left.(int)
-	src.Consume1('-')
+	src.Expect1('-')
 	rightValue := expr.Parse(src, precedenceSum).(int)
 	return leftValue - rightValue
 }
@@ -116,7 +116,7 @@ type multiplyToken struct {
 
 func (token *multiplyToken) InfixParse(src *parse.Source, left interface{}) interface{} {
 	leftValue := left.(int)
-	src.Consume1('*')
+	src.Expect1('*')
 	rightValue := expr.Parse(src, precedenceProduct).(int)
 	return leftValue * rightValue
 }
@@ -126,7 +126,7 @@ type divideToken struct {
 
 func (token *divideToken) InfixParse(src *parse.Source, left interface{}) interface{} {
 	leftValue := left.(int)
-	src.Consume1('/')
+	src.Expect1('/')
 	rightValue := expr.Parse(src, precedenceProduct).(int)
 	return leftValue / rightValue
 }
@@ -135,9 +135,9 @@ type groupToken struct {
 }
 
 func (token *groupToken) PrefixParse(src *parse.Source) interface{} {
-	src.Consume1('(')
+	src.Expect1('(')
 	expr := expr.Parse(src, 0)
-	src.Consume1(')')
+	src.Expect1(')')
 	return expr
 }
 ```

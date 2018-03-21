@@ -184,13 +184,79 @@ func (src *Source) CopyN(space []byte, n int) []byte {
 }
 
 // Consume1 like ConsumeN, with N == 1
-func (src *Source) Consume1(b1 byte) {
-	if b1 != src.current[0] {
-		src.ReportError(errors.New(
-			"expect " + string([]byte{b1}) +
-				" but found " + string([]byte{src.current[0]})))
+func (src *Source) Consume1() {
+	src.current = src.current[1:]
+	if len(src.current) == 0 {
+		src.Consume()
 	}
-	src.ConsumeN(1)
+}
+
+var errExpectedBytesNotFound = errors.New(`expected bytes not found`)
+
+// Expect1 like ConsumeN, with N == 1.
+// bytes will not be consumed if not match
+func (src *Source) Expect1(b1 byte) {
+	if b1 != src.current[0] {
+		src.ReportError(errExpectedBytesNotFound)
+		return
+	}
+	src.Consume1()
+}
+
+// Expect2 like ConsumeN, with N == 2.
+// bytes will not be consumed if not match
+func (src *Source) Expect2(b1, b2 byte) {
+	if len(src.current) >= 2 {
+		c1 := b1 == src.current[0]
+		c2 := b2 == src.current[1]
+		if c1 && c2 {
+			src.ConsumeN(2)
+		} else {
+			src.ReportError(errExpectedBytesNotFound)
+		}
+		return
+	}
+	bytes, _ := src.PeekN(2)
+	if len(bytes) != 2 {
+		src.ReportError(errExpectedBytesNotFound)
+		return
+	}
+	c1 := b1 == src.current[0]
+	c2 := b2 == src.current[1]
+	if c1 && c2 {
+		src.ConsumeN(2)
+		return
+	}
+	src.ReportError(errExpectedBytesNotFound)
+}
+
+// Expect3 like ConsumeN, with N == 3.
+// bytes will not be consumed if not match
+func (src *Source) Expect3(b1, b2, b3 byte) {
+	if len(src.current) >= 3 {
+		c1 := b1 == src.current[0]
+		c2 := b2 == src.current[1]
+		c3 := b3 == src.current[2]
+		if c1 && c2 && c3 {
+			src.ConsumeN(3)
+		} else {
+			src.ReportError(errExpectedBytesNotFound)
+		}
+		return
+	}
+	bytes, _ := src.PeekN(3)
+	if len(bytes) != 3 {
+		src.ReportError(errExpectedBytesNotFound)
+		return
+	}
+	c1 := b1 == src.current[0]
+	c2 := b2 == src.current[1]
+	c3 := b3 == src.current[2]
+	if c1 && c2 && c3 {
+		src.ConsumeN(3)
+		return
+	}
+	src.ReportError(errExpectedBytesNotFound)
 }
 
 // Consume will discard whole current buffer, and read next buffer.

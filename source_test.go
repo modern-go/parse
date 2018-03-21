@@ -44,7 +44,7 @@ func TestSource_RollbackTo(t *testing.T) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcd"), make([]byte, 2))[0].(*parse.Source)
 		src.Savepoint("s1")
-		src.Consume1('a')
+		src.Expect1('a')
 		must.Equal([]byte{'b'}, src.Peek())
 		src.RollbackTo("s1")
 		must.Equal([]byte{'a', 'b'}, src.Peek())
@@ -142,15 +142,41 @@ func TestSource_Peek1(t *testing.T) {
 	}))
 }
 
-func TestSource_Consume1(t *testing.T) {
-	t.Run("consume not match", test.Case(func(ctx context.Context) {
+func TestSource_Expect1(t *testing.T) {
+	t.Run("not match", test.Case(func(ctx context.Context) {
 		src := parse.NewSourceString("h2")
-		src.Consume1('b')
+		src.Expect1('b')
 		must.NotNil(src.Error())
 	}))
-	t.Run("consume match", test.Case(func(ctx context.Context) {
+	t.Run("match", test.Case(func(ctx context.Context) {
 		src := parse.NewSourceString("h2")
-		src.Consume1('h')
+		src.Expect1('h')
+		must.Nil(src.Error())
+	}))
+}
+
+func TestSource_Expect2(t *testing.T) {
+	t.Run("not match", test.Case(func(ctx context.Context) {
+		src := parse.NewSourceString("h2b")
+		src.Expect2('h', '3')
+		must.NotNil(src.Error())
+	}))
+	t.Run("match", test.Case(func(ctx context.Context) {
+		src := parse.NewSourceString("h2b")
+		src.Expect2('h', '2')
+		must.Nil(src.Error())
+	}))
+}
+
+func TestSource_Expect3(t *testing.T) {
+	t.Run("not match", test.Case(func(ctx context.Context) {
+		src := parse.NewSourceString("h2b~")
+		src.Expect3('h', '2', 'c')
+		must.NotNil(src.Error())
+	}))
+	t.Run("match", test.Case(func(ctx context.Context) {
+		src := parse.NewSourceString("h2b~")
+		src.Expect3('h', '2', 'b')
 		must.Nil(src.Error())
 	}))
 }
