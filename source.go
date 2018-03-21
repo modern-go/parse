@@ -65,6 +65,11 @@ func (src *Source) SetBuffer(buf []byte) {
 	src.buf = buf
 }
 
+// SetNewBuff will prevent the buffer reuse
+func (src *Source) SetNewBuffer() {
+	src.buf = make([]byte, 64)
+}
+
 // Savepoint mark current position, and start recording.
 // Later we can rollback to current position.
 func (src *Source) Savepoint(savepointName string) {
@@ -81,6 +86,16 @@ func (src *Source) Savepoint(savepointName string) {
 		name:    savepointName,
 		current: src.current,
 	})
+}
+
+func (src *Source) DeleteSavepoint(savepointName string) {
+	for i, savepoint := range src.savepointStack {
+		if savepoint.name == savepointName {
+			src.savepointStack = src.savepointStack[:i]
+			return
+		}
+	}
+	src.ReportError(errors.New("savepoint not found: " + savepointName))
 }
 
 // RollbackTo rollback the cursor to previous savepoint.
@@ -189,6 +204,16 @@ func (src *Source) Consume1() {
 	if len(src.current) == 0 {
 		src.Consume()
 	}
+}
+
+// Read1 like ConsumeN, with N == 1
+func (src *Source) Read1() byte {
+	b := src.current[0]
+	src.current = src.current[1:]
+	if len(src.current) == 0 {
+		src.Consume()
+	}
+	return b
 }
 
 var errExpectedBytesNotFound = errors.New(`expected bytes not found`)
@@ -310,7 +335,7 @@ func (src *Source) PeekUtf8() []byte {
 
 // ReportError set the source in error condition.
 func (src *Source) ReportError(err error) {
-	if src.err == nil {
+	if src.err == nil || src.err == io.EOF {
 		src.err = err
 	}
 }
