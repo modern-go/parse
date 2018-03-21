@@ -181,6 +181,19 @@ func TestSource_Expect3(t *testing.T) {
 	}))
 }
 
+func TestSource_Expect4(t *testing.T) {
+	t.Run("not match", test.Case(func(ctx context.Context) {
+		src := parse.NewSourceString("h2bc~")
+		src.Expect4('h', '2', 'c', 'd')
+		must.NotNil(src.Error())
+	}))
+	t.Run("match", test.Case(func(ctx context.Context) {
+		src := parse.NewSourceString("h2bc~")
+		src.Expect4('h', '2', 'b', 'c')
+		must.Nil(src.Error())
+	}))
+}
+
 func TestSource_PeekRune(t *testing.T) {
 	t.Run("rune in current buf", test.Case(func(ctx context.Context) {
 		src := parse.NewSourceString("h")

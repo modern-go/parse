@@ -284,6 +284,37 @@ func (src *Source) Expect3(b1, b2, b3 byte) {
 	src.ReportError(errExpectedBytesNotFound)
 }
 
+// Expect4 like ConsumeN, with N == 4.
+// bytes will not be consumed if not match
+func (src *Source) Expect4(b1, b2, b3, b4 byte) {
+	if len(src.current) >= 4 {
+		c1 := b1 == src.current[0]
+		c2 := b2 == src.current[1]
+		c3 := b3 == src.current[2]
+		c4 := b4 == src.current[3]
+		if c1 && c2 && c3 && c4 {
+			src.ConsumeN(4)
+		} else {
+			src.ReportError(errExpectedBytesNotFound)
+		}
+		return
+	}
+	bytes, _ := src.PeekN(4)
+	if len(bytes) != 4 {
+		src.ReportError(errExpectedBytesNotFound)
+		return
+	}
+	c1 := b1 == src.current[0]
+	c2 := b2 == src.current[1]
+	c3 := b3 == src.current[2]
+	c4 := b4 == src.current[3]
+	if c1 && c2 && c3 && c4 {
+		src.ConsumeN(4)
+		return
+	}
+	src.ReportError(errExpectedBytesNotFound)
+}
+
 // Consume will discard whole current buffer, and read next buffer.
 func (src *Source) Consume() {
 	if src.reader == nil {
