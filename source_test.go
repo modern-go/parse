@@ -12,22 +12,16 @@ import (
 )
 
 func TestSource_Savepoint(t *testing.T) {
-	t.Run("savepoint name must be unique", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("hello")
-		src.Savepoint("hello")
-		src.Savepoint("hello")
-		must.NotNil(src.Error())
-	}))
 	t.Run("rollback should delete the savepoint", test.Case(func(ctx context.Context) {
 		src := parse.NewSourceString("hello")
-		src.Savepoint("hello")
-		src.RollbackTo("hello")
-		src.Savepoint("hello")
+		src.StoreSavepoint()
+		src.RollbackToSavepoint()
+		src.StoreSavepoint()
 		must.Nil(src.Error())
 	}))
 	t.Run("rollback not existing savepoint", test.Case(func(ctx context.Context) {
 		src := parse.NewSourceString("hello")
-		src.RollbackTo("hello")
+		src.RollbackToSavepoint()
 		must.NotNil(src.Error())
 	}))
 }
@@ -36,36 +30,36 @@ func TestSource_RollbackTo(t *testing.T) {
 	t.Run("immediate rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcd"), make([]byte, 1))[0].(*parse.Source)
-		src.Savepoint("s1")
-		src.RollbackTo("s1")
+		src.StoreSavepoint()
+		src.RollbackToSavepoint()
 		must.Equal([]byte{'a'}, src.Peek())
 	}))
 	t.Run("partial consume then rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcd"), make([]byte, 2))[0].(*parse.Source)
-		src.Savepoint("s1")
+		src.StoreSavepoint()
 		src.Expect1('a')
 		must.Equal([]byte{'b'}, src.Peek())
-		src.RollbackTo("s1")
+		src.RollbackToSavepoint()
 		must.Equal([]byte{'a', 'b'}, src.Peek())
 	}))
 	t.Run("consume then rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcd"), make([]byte, 2))[0].(*parse.Source)
-		src.Savepoint("s1")
+		src.StoreSavepoint()
 		src.Consume()
 		must.Equal([]byte{'c', 'd'}, src.Peek())
-		src.RollbackTo("s1")
+		src.RollbackToSavepoint()
 		must.Equal([]byte{'a', 'b'}, src.Peek())
 	}))
 	t.Run("consume twice then rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		src.Savepoint("s1")
+		src.StoreSavepoint()
 		src.Consume()
 		src.Consume()
 		must.Equal([]byte{'e', 'f'}, src.Peek())
-		src.RollbackTo("s1")
+		src.RollbackToSavepoint()
 		must.Equal([]byte{'a', 'b'}, src.Peek())
 		src.Consume()
 		must.Equal([]byte{'c', 'd'}, src.Peek())
@@ -73,14 +67,14 @@ func TestSource_RollbackTo(t *testing.T) {
 	t.Run("rollback two savepoints", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 1))[0].(*parse.Source)
-		src.Savepoint("s1")
+		src.StoreSavepoint()
 		src.Consume()
-		src.Savepoint("s2")
+		src.StoreSavepoint()
 		src.Consume()
 		must.Equal([]byte{'c'}, src.Peek())
-		src.RollbackTo("s2")
+		src.RollbackToSavepoint()
 		must.Equal([]byte{'b'}, src.Peek())
-		src.RollbackTo("s1")
+		src.RollbackToSavepoint()
 		must.Equal([]byte{'a'}, src.Peek())
 	}))
 }

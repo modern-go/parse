@@ -7,7 +7,6 @@ import (
 )
 
 type savepoint struct {
-	name     string
 	current  []byte
 	nextList [][]byte
 }
@@ -72,47 +71,37 @@ func (src *Source) SetNewBuffer() {
 	src.buf = make([]byte, 64)
 }
 
-// Savepoint mark current position, and start recording.
+// StoreSavepoint mark current position, and start recording.
 // Later we can rollback to current position.
-func (src *Source) Savepoint(savepointName string) {
-	if src.Error() != nil {
-		return
-	}
-	for _, savepoint := range src.savepointStack {
-		if savepoint.name == savepointName {
-			src.ReportError(errors.New("savepoint name has already been used: " + savepointName))
-			return
-		}
-	}
+func (src *Source) StoreSavepoint() {
 	src.savepointStack = append(src.savepointStack, &savepoint{
-		name:    savepointName,
 		current: src.current,
 	})
 }
 
-func (src *Source) DeleteSavepoint(savepointName string) {
-	for i, savepoint := range src.savepointStack {
-		if savepoint.name == savepointName {
-			src.savepointStack = src.savepointStack[:i]
-			return
-		}
+var errNoSavepoint = errors.New("no savepoint in stack")
+
+func (src *Source) DeleteSavepoint() {
+	if len(src.savepointStack) == 0 {
+		src.ReportError(errNoSavepoint)
+		return
 	}
-	src.ReportError(errors.New("savepoint not found: " + savepointName))
+	src.savepointStack = src.savepointStack[:len(src.savepointStack)-1]
 }
 
-// RollbackTo rollback the cursor to previous savepoint.
+// RollbackToSavepoint rollback the cursor to previous savepoint.
 // The bytes read from reader will be replayed.
-func (src *Source) RollbackTo(savepointName string) {
-	for i, savepoint := range src.savepointStack {
-		if savepoint.name == savepointName {
-			src.current = src.savepointStack[i].current
-			src.nextList = src.savepointStack[i].nextList
-			src.savepointStack = src.savepointStack[:i]
-			src.err = nil
-			return
-		}
+func (src *Source) RollbackToSavepoint() {
+	if len(src.savepointStack) == 0 {
+		src.ReportError(errNoSavepoint)
+		return
 	}
-	src.ReportError(errors.New("savepoint not found: " + savepointName))
+	i := len(src.savepointStack) - 1
+	savepoint := src.savepointStack[i]
+	src.current = savepoint.current
+	src.nextList = savepoint.nextList
+	src.savepointStack = src.savepointStack[:i]
+	src.err = nil
 }
 
 // Peek return the current buffer ready to be parsed.
@@ -136,18 +125,18 @@ func (src *Source) PeekN(n int) ([]byte, error) {
 	if src.reader == nil {
 		return src.current, io.ErrUnexpectedEOF
 	}
-	src.Savepoint("Peek")
+	src.StoreSavepoint()
 	peeked := src.current
 	src.Consume()
 	for {
 		peeked = append(peeked, src.current...)
 		if len(peeked) >= n {
-			src.RollbackTo("Peek")
+			src.RollbackToSavepoint()
 			return peeked[:n], nil
 		}
 		if src.Error() != nil {
 			err := src.Error()
-			src.RollbackTo("Peek")
+			src.RollbackToSavepoint()
 			return peeked, err
 		}
 		src.Consume()

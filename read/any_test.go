@@ -24,6 +24,7 @@ func TestAnyExcept1(t *testing.T) {
 			src, nil, 'd'))
 	}))
 }
+
 func TestUntil1(t *testing.T) {
 	t.Run("not found", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,

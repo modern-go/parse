@@ -9,7 +9,7 @@ import (
 // the bytes will be appended to the space passed in.
 // If space is nil, new space will be allocated from heap
 func UnicodeRange(src *parse.Source, space []byte, table *unicode.RangeTable) []byte {
-	src.Savepoint("UnicodeRange")
+	src.StoreSavepoint()
 	length := 0
 	for src.Error() == nil {
 		r, n := src.PeekRune()
@@ -20,15 +20,16 @@ func UnicodeRange(src *parse.Source, space []byte, table *unicode.RangeTable) []
 		src.ConsumeN(n)
 	}
 	if src.FatalError() != nil {
+		src.DeleteSavepoint()
 		return nil
 	}
-	src.RollbackTo("UnicodeRange")
+	src.RollbackToSavepoint()
 	return src.CopyN(space, length)
 }
 
 // UnicodeRanges read unicode until one not in included table or encounteredd one in excluded table
 func UnicodeRanges(src *parse.Source, space []byte, includes []*unicode.RangeTable, excludes []*unicode.RangeTable) []byte {
-	src.Savepoint("UnicodeRanges")
+	src.StoreSavepoint()
 	length := 0
 	for src.Error() == nil {
 		r, n := src.PeekRune()
@@ -42,9 +43,10 @@ func UnicodeRanges(src *parse.Source, space []byte, includes []*unicode.RangeTab
 		src.ConsumeN(n)
 	}
 	if src.FatalError() != nil {
+		src.DeleteSavepoint()
 		return nil
 	}
-	src.RollbackTo("UnicodeRanges")
+	src.RollbackToSavepoint()
 	return src.CopyN(space, length)
 }
 
