@@ -23,8 +23,9 @@ type Source struct {
 	nextList       [][]byte
 	buf            []byte
 	savepointStack []*savepoint
-	subSources     []*Source
-	Attachment     interface{}
+	reusableSpace  []byte      // to avoid allocation in parsing
+	subSources     []*Source   // to reuse sub sources
+	Attachment     interface{} // to pass context
 }
 
 // NewSource construct a source from io.Reader.
@@ -391,4 +392,14 @@ func (src *Source) BorrowSubSource(buf []byte) *Source {
 func (src *Source) ReturnSubSource(subSrc *Source) {
 	subSrc.Reset(nil, nil)
 	subSrc.subSources = append(subSrc.subSources, subSrc)
+}
+
+func (src *Source) ReserveSpace(space []byte) {
+	src.reusableSpace = space
+}
+
+func (src *Source) ClaimSpace() []byte {
+	space := src.reusableSpace
+	src.reusableSpace = nil
+	return space
 }
