@@ -127,21 +127,10 @@ func (src *Source) PeekN(n int) ([]byte, error) {
 		return src.current, io.ErrUnexpectedEOF
 	}
 	src.StoreSavepoint()
-	peeked := src.current
-	src.Consume()
-	for {
-		peeked = append(peeked, src.current...)
-		if len(peeked) >= n {
-			src.RollbackToSavepoint()
-			return peeked[:n], nil
-		}
-		if src.Error() != nil {
-			err := src.Error()
-			src.RollbackToSavepoint()
-			return peeked, err
-		}
-		src.Consume()
-	}
+	peeked := src.ReadN(n)
+	err := src.err
+	src.RollbackToSavepoint()
+	return peeked, err
 }
 
 // ConsumeN move the cursor N bytes. If N is larger than current buffer,
@@ -207,6 +196,33 @@ func (src *Source) Read1() byte {
 		src.Consume()
 	}
 	return b
+}
+
+func (src *Source) ReadN(n int) []byte {
+	if n <= len(src.current) {
+		return src.current[:n]
+	}
+	if src.reader == nil {
+		src.ReportError(io.ErrUnexpectedEOF)
+		return src.current
+	}
+	peeked := append(src.ClaimSpace(), src.current...)
+	src.Consume()
+	for {
+		peeked = append(peeked, src.current...)
+		if len(peeked) > n {
+			src.current = peeked[n:]
+			return peeked[:n]
+		}
+		if len(peeked) == n {
+			src.Consume()
+			return peeked
+		}
+		if src.Error() != nil {
+			return peeked
+		}
+		src.Consume()
+	}
 }
 
 var errExpectedBytesNotFound = errors.New(`expected bytes not found`)

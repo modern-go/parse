@@ -305,3 +305,13 @@ func TestSource_CopyN(t *testing.T) {
 		must.Equal(io.ErrUnexpectedEOF, src.Error())
 	}))
 }
+
+func TestSource_ReadN(t *testing.T) {
+	t.Run("read all", test.Case(func(ctx context.Context) {
+		src := must.Call(parse.NewSource,
+			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
+		must.Equal([]byte{'a', 'b', 'c', 'd', 'e', 'f'}, src.ReadN(6))
+		must.Equal([]byte{}, src.Peek())
+		must.Equal(io.EOF, src.Error())
+	}))
+}
