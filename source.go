@@ -24,6 +24,7 @@ type Source struct {
 	nextList       [][]byte
 	buf            []byte
 	savepointStack []*savepoint
+	subSources     []*Source
 	Attachment     interface{}
 }
 
@@ -57,6 +58,7 @@ func (src *Source) Reset(reader io.Reader, buf []byte) {
 	src.current = buf
 	src.buf = buf
 	src.err = nil
+	src.savepointStack = nil
 }
 
 // SetBuffer will prevent the buffer reuse,
@@ -132,7 +134,7 @@ func (src *Source) PeekN(n int) ([]byte, error) {
 		return src.current[:n], nil
 	}
 	if src.reader == nil {
-		return src.current, io.EOF
+		return src.current, io.ErrUnexpectedEOF
 	}
 	src.Savepoint("Peek")
 	peeked := src.current
@@ -383,4 +385,21 @@ func (src *Source) FatalError() error {
 		return nil
 	}
 	return src.err
+}
+
+func (src *Source) BorrowSubSource(buf []byte) *Source {
+	if len(src.subSources) == 0 {
+		return &Source{
+			current: buf,
+		}
+	}
+	subSrc := src.subSources[0]
+	src.subSources = src.subSources[1:]
+	subSrc.current = buf
+	return subSrc
+}
+
+func (src *Source) ReturnSubSource(subSrc *Source) {
+	subSrc.Reset(nil, nil)
+	subSrc.subSources = append(subSrc.subSources, subSrc)
 }

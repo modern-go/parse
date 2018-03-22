@@ -94,7 +94,7 @@ func TestSource_PeekN(t *testing.T) {
 	t.Run("no reader", test.Case(func(ctx context.Context) {
 		src := parse.NewSourceString("abc")
 		peeked, err := src.PeekN(4)
-		must.Equal(io.EOF, err)
+		must.Equal(io.ErrUnexpectedEOF, err)
 		must.Equal("abc", string(peeked))
 	}))
 	t.Run("peek next", test.Case(func(ctx context.Context) {
