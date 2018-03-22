@@ -6,7 +6,8 @@ import (
 )
 
 // AnyExcept1 read any byte except b1
-func AnyExcept1(src *parse.Source, space []byte, b1 byte) []byte {
+func AnyExcept1(src *parse.Source, b1 byte) []byte {
+	space := src.ClaimSpace()
 	for src.Error() == nil {
 		buf := src.Peek()
 		for i := 0; i < len(buf); i++ {
@@ -25,7 +26,8 @@ func AnyExcept1(src *parse.Source, space []byte, b1 byte) []byte {
 
 // Until1 read any byte except b1.
 // If b1 not found, report error.
-func Until1(src *parse.Source, space []byte, b1 byte) []byte {
+func Until1(src *parse.Source, b1 byte) []byte {
+	space := src.ClaimSpace()
 	for src.Error() == nil {
 		buf := src.Peek()
 		for i := 0; i < len(buf); i++ {
@@ -44,7 +46,8 @@ func Until1(src *parse.Source, space []byte, b1 byte) []byte {
 }
 
 // AnyExcept2 read any byte except b1 and b2
-func AnyExcept2(src *parse.Source, space []byte, b1 byte, b2 byte) []byte {
+func AnyExcept2(src *parse.Source, b1 byte, b2 byte) []byte {
+	space := src.ClaimSpace()
 	for src.Error() == nil {
 		buf := src.Peek()
 		for i := 0; i < len(buf); i++ {

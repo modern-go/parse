@@ -275,32 +275,32 @@ func TestSource_CopyN(t *testing.T) {
 	t.Run("consume partial current", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a'}, src.CopyN(nil, 1))
+		must.Equal([]byte{'a'}, src.CopyN(1))
 		must.Equal([]byte{'b'}, src.Peek())
 	}))
 	t.Run("consume all current", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b'}, src.CopyN(nil, 2))
+		must.Equal([]byte{'a', 'b'}, src.CopyN(2))
 		must.Equal([]byte{'c', 'd'}, src.Peek())
 	}))
 	t.Run("consume two buf", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b', 'c'}, src.CopyN(nil, 3))
+		must.Equal([]byte{'a', 'b', 'c'}, src.CopyN(3))
 		must.Equal([]byte{'d'}, src.Peek())
 	}))
 	t.Run("consume all", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b', 'c', 'd', 'e', 'f'}, src.CopyN(nil, 6))
+		must.Equal([]byte{'a', 'b', 'c', 'd', 'e', 'f'}, src.CopyN(6))
 		must.Equal([]byte{}, src.Peek())
 		must.Equal(io.EOF, src.Error())
 	}))
 	t.Run("consume beyond end", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b', 'c', 'd', 'e', 'f'}, src.CopyN(nil, 7))
+		must.Equal([]byte{'a', 'b', 'c', 'd', 'e', 'f'}, src.CopyN(7))
 		must.Equal([]byte{}, src.Peek())
 		must.Equal(io.ErrUnexpectedEOF, src.Error())
 	}))

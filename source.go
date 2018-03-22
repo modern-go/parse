@@ -168,7 +168,8 @@ func (src *Source) ConsumeN(n int) {
 
 // CopyN works like ConsumeN.
 // But unlike ConsumeN, it copies the bytes read into new buffer and return.
-func (src *Source) CopyN(space []byte, n int) []byte {
+func (src *Source) CopyN(n int) []byte {
+	space := src.ClaimSpace()
 	for {
 		if n <= len(src.current) {
 			space = append(space, src.current[:n]...)
