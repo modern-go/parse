@@ -32,7 +32,7 @@ func Until1(src *parse.Source, space []byte, b1 byte) []byte {
 			b := buf[i]
 			if b == b1 {
 				space = append(space, buf[:i]...)
-				src.ConsumeN(i)
+				src.ConsumeN(i + 1)
 				return space
 			}
 		}
