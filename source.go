@@ -198,28 +198,34 @@ func (src *Source) Read1() byte {
 }
 
 func (src *Source) ReadN(n int) []byte {
-	if n <= len(src.current) {
-		return src.current[:n]
+	if n < len(src.current) {
+		bytesRead := src.current[:n]
+		src.current = src.current[n:]
+		return bytesRead
+	}
+	bytesRead := append(src.ClaimSpace(), src.current...)
+	if n == len(src.current) {
+		src.Consume()
+		return bytesRead
 	}
 	if src.reader == nil {
 		src.ReportError(io.ErrUnexpectedEOF)
-		return src.current
+		return nil
 	}
-	peeked := append(src.ClaimSpace(), src.current...)
 	src.Consume()
 	for {
-		peeked = append(peeked, src.current...)
-		if len(peeked) > n {
-			src.current = peeked[n:]
-			return peeked[:n]
+		bytesRead = append(bytesRead, src.current...)
+		if len(bytesRead) > n {
+			src.current = bytesRead[n:]
+			return bytesRead[:n]
 		}
-		if len(peeked) == n {
+		if len(bytesRead) == n {
 			src.Consume()
-			return peeked
+			return bytesRead
 		}
 		if src.Error() != nil {
 			src.ReportError(io.ErrUnexpectedEOF)
-			return peeked
+			return bytesRead
 		}
 		src.Consume()
 	}

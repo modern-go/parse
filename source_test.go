@@ -304,12 +304,16 @@ func TestSource_CopyN(t *testing.T) {
 }
 
 func TestSource_ReadN(t *testing.T) {
-	t.Run("read all", test.Case(func(ctx context.Context) {
+	t.Run("read from buffer", test.Case(func(ctx context.Context) {
+		src := parse.NewSourceString("abcdef")
+		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, src.ReadN(5))
+		must.Equal([]byte{'f'}, src.Peek())
+	}))
+	t.Run("read from reader", test.Case(func(ctx context.Context) {
 		src, err := parse.NewSource(strings.NewReader("abcdef"), make([]byte, 2))
 		must.Nil(err)
-		must.Equal([]byte{'a', 'b', 'c', 'd', 'e', 'f'}, src.ReadN(6))
-		must.Equal([]byte{}, src.Peek())
-		must.Equal(io.EOF, src.Error())
+		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, src.ReadN(5))
+		must.Equal([]byte{'f'}, src.Peek())
 	}))
 	t.Run("should report unexpected eof when not fully read", test.Case(func(ctx context.Context) {
 		src, err := parse.NewSource(strings.NewReader("abcdef"), make([]byte, 2))
