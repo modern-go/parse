@@ -218,6 +218,7 @@ func (src *Source) ReadN(n int) []byte {
 			return peeked
 		}
 		if src.Error() != nil {
+			src.ReportError(io.ErrUnexpectedEOF)
 			return peeked
 		}
 		src.Consume()
