@@ -5,6 +5,17 @@ import (
 	"io"
 )
 
+// All read all bytes
+func All(src *parse.Source) []byte {
+	space := src.ClaimSpace()
+	for src.Error() == nil {
+		buf := src.Peek()
+		space = append(space, buf...)
+		src.Consume()
+	}
+	return space
+}
+
 // AnyExcept1 read any byte except b1
 func AnyExcept1(src *parse.Source, b1 byte) []byte {
 	space := src.ClaimSpace()
