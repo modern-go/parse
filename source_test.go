@@ -83,35 +83,32 @@ func TestSource_PeekN(t *testing.T) {
 	t.Run("n smaller than current", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b'}, must.Call(src.PeekN, 2)[0])
+		must.Equal([]byte{'a', 'b'}, src.PeekN(2))
 	}))
 	t.Run("no reader", test.Case(func(ctx context.Context) {
 		src := parse.NewSourceString("abc")
-		peeked, err := src.PeekN(4)
-		must.Equal(io.ErrUnexpectedEOF, err)
+		peeked := src.PeekN(4)
 		must.Equal("abc", string(peeked))
 	}))
 	t.Run("peek next", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b', 'c'}, must.Call(src.PeekN, 3)[0])
-		must.Equal([]byte{'a', 'b', 'c'}, must.Call(src.PeekN, 3)[0])
+		must.Equal([]byte{'a', 'b', 'c'}, src.PeekN(3))
+		must.Equal([]byte{'a', 'b', 'c'}, src.PeekN(3))
 	}))
 	t.Run("peek next next", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, must.Call(src.PeekN, 5)[0])
-		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, must.Call(src.PeekN, 5)[0])
+		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, src.PeekN(5))
+		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, src.PeekN(5))
 	}))
 	t.Run("peek beyond end", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abc"), make([]byte, 2))[0].(*parse.Source)
-		peeked, err := src.PeekN(5)
+		peeked := src.PeekN(5)
 		must.Equal([]byte{'a', 'b', 'c'}, peeked)
-		must.NotNil(err)
-		peeked, err = src.PeekN(5)
+		peeked = src.PeekN(5)
 		must.Equal([]byte{'a', 'b', 'c'}, peeked)
-		must.NotNil(err)
 	}))
 }
 

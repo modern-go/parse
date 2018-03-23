@@ -119,18 +119,17 @@ func (src *Source) Peek1() byte {
 // PeekN return the first N bytes in the buffer to parse.
 // If N is longer than current buffer, it will read from reader.
 // The cursor will not be moved.
-func (src *Source) PeekN(n int) ([]byte, error) {
+func (src *Source) PeekN(n int) []byte {
 	if n <= len(src.current) {
-		return src.current[:n], nil
+		return src.current[:n]
 	}
 	if src.reader == nil {
-		return src.current, io.ErrUnexpectedEOF
+		return src.current
 	}
 	src.StoreSavepoint()
 	peeked := src.ReadN(n)
-	err := src.err
 	src.RollbackToSavepoint()
-	return peeked, err
+	return peeked
 }
 
 // ConsumeN move the cursor N bytes. If N is larger than current buffer,
@@ -250,7 +249,7 @@ func (src *Source) Expect2(b1, b2 byte) {
 		}
 		return
 	}
-	bytes, _ := src.PeekN(2)
+	bytes := src.PeekN(2)
 	if len(bytes) != 2 {
 		src.ReportError(errExpectedBytesNotFound)
 		return
@@ -278,7 +277,7 @@ func (src *Source) Expect3(b1, b2, b3 byte) {
 		}
 		return
 	}
-	bytes, _ := src.PeekN(3)
+	bytes := src.PeekN(3)
 	if len(bytes) != 3 {
 		src.ReportError(errExpectedBytesNotFound)
 		return
@@ -308,7 +307,7 @@ func (src *Source) Expect4(b1, b2, b3, b4 byte) {
 		}
 		return
 	}
-	bytes, _ := src.PeekN(4)
+	bytes := src.PeekN(4)
 	if len(bytes) != 4 {
 		src.ReportError(errExpectedBytesNotFound)
 		return
@@ -357,7 +356,7 @@ func (src *Source) PeekRune() (rune, int) {
 		return utf8.DecodeRune(src.current)
 	}
 	sz := x & 7
-	fullBuf, _ := src.PeekN(int(sz))
+	fullBuf := src.PeekN(int(sz))
 	return utf8.DecodeRune(fullBuf)
 }
 
@@ -369,7 +368,7 @@ func (src *Source) PeekUtf8() []byte {
 		return src.current[:1]
 	}
 	sz := int(x & 7)
-	fullBuf, _ := src.PeekN(sz)
+	fullBuf := src.PeekN(sz)
 	return fullBuf
 }
 
