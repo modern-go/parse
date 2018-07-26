@@ -322,3 +322,65 @@ func TestSource_ReadN(t *testing.T) {
 		must.Equal(io.ErrUnexpectedEOF, src.Error())
 	}))
 }
+
+func TestPeek(t *testing.T) {
+	t.Run("consecutive peek", test.Case(func(ctx context.Context) {
+		data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		reader := bytes.NewReader(data)
+		buf := make([]byte, 4)
+		src, err := parse.NewSource(reader, buf)
+		must.AssertNil(err)
+		must.Equal(byte(1), src.Read1())
+		// current 还剩3
+
+		// Peek应该是可重入的，多次peek得到相同的结果
+		expect := []byte{2, 3, 4, 5}
+		must.Equal(expect, src.PeekN(4))
+		must.Equal(expect, src.PeekN(4))
+		must.Equal(expect, src.PeekN(4))
+	}))
+}
+
+func TestRecursiveSavePoints(t *testing.T) {
+	t.Run("recursive savepoint", test.Case(func(ctx context.Context) {
+		data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+		reader := bytes.NewReader(data)
+		buf := make([]byte, 4)
+		src, err := parse.NewSource(reader, buf)
+		must.AssertNil(err)
+
+		// store the first 4 bytes
+		first := src.PeekN(4)
+		must.Equal([]byte{1, 2, 3, 4}, first)
+		for i := 0; i < 10; i++ {
+			must.Equal(first, src.PeekN(4))
+		}
+		// break point 1
+		src.StoreSavepoint()
+
+		//consume 4 bytes
+		src.ReadN(4)
+		// store the next 4 bytes
+		second := src.PeekN(4)
+		must.Equal([]byte{5, 6, 7, 8}, second)
+		for i := 0; i < 10; i++ {
+			must.Equal(second, src.PeekN(4))
+		}
+		// break point 2
+		src.StoreSavepoint()
+
+		// consume 4 more bytes
+		src.ReadN(4)
+
+		// jump back to break point 2
+		src.RollbackToSavepoint()
+		for i := 0; i < 10; i++ {
+			must.Equal(second, src.PeekN(4))
+		}
+		// jump back to break point 1
+		src.RollbackToSavepoint()
+		for i := 0; i < 10; i++ {
+			must.Equal(second, src.PeekN(4))
+		}
+	}))
+}

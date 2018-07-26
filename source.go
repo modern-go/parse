@@ -77,6 +77,7 @@ func (src *Source) SetNewBuffer() {
 func (src *Source) StoreSavepoint() {
 	src.savepointStack = append(src.savepointStack, &savepoint{
 		current: src.current,
+		nextList: src.nextList,
 	})
 }
 
