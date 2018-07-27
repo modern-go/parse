@@ -317,3 +317,17 @@ func TestReadAll(t *testing.T) {
 		must.Equal(io.EOF, src.Error())
 	}))
 }
+
+func TestPeek(t *testing.T) {
+	t.Run("peek without consuming more data", test.Case(func(ctx context.Context) {
+		src, _ := parse.NewSource(strings.NewReader("hello world"), 4)
+		first := src.Peek()
+		must.Equal([]byte("hell"), first)
+		must.Equal(first, src.ReadN(4))
+		must.Equal(0, len(src.Peek()))
+		// trigger consume
+		must.Equal(byte('o'), src.Peek1())
+		second := src.Peek()
+		must.Equal([]byte("o wo"), second)
+	}))
+}

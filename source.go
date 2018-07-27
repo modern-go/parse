@@ -42,7 +42,7 @@ type Source struct {
 }
 
 const (
-	_maxBufLen = 30
+	_maxBufLen = 40
 )
 
 // NewSource construct a source from io.Reader.
@@ -116,6 +116,11 @@ func (src *Source) Peek1() byte {
 	// EOF
 	src.ReportError(io.ErrUnexpectedEOF)
 	return 0x00 //NULL
+}
+
+// Peek peeks as many bytes as possible without triggering consume
+func (src *Source) Peek() []byte {
+	return src.readBytes[src.nextIdx:]
 }
 
 // PeekAll peek all of the rest bytes
