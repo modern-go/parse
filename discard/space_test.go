@@ -14,13 +14,13 @@ import (
 func TestUnicodeSpace(t *testing.T) {
 	t.Run("not found", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader("abcd"), make([]byte, 2))[0].(*parse.Source)
+			strings.NewReader("abcd"), 2)[0].(*parse.Source)
 		must.Equal(0, discard.UnicodeSpace(src))
 		must.Equal([]byte{'a', 'b'}, src.PeekN(2))
 	}))
 	t.Run("found", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader(" abcd"), make([]byte, 2))[0].(*parse.Source)
+			strings.NewReader(" abcd"), 2)[0].(*parse.Source)
 		must.Equal(1, discard.UnicodeSpace(src))
 		must.Equal([]byte{'a'}, src.PeekN(1))
 	}))

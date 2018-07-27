@@ -41,14 +41,23 @@ type Source struct {
 	savepointStack *stack
 }
 
+const (
+	_maxBufLen = 30
+)
+
 // NewSource construct a source from io.Reader.
 // At least one byte should be read from the io.Reader, otherwise error will be returned.
-func NewSource(reader io.Reader, buf []byte) (*Source, error) {
+func NewSource(reader io.Reader, bufLen int) (*Source, error) {
+	if bufLen > _maxBufLen {
+		bufLen = _maxBufLen
+	}
+	buf := make([]byte, bufLen)
 	n, err := reader.Read(buf)
 	if n == 0 {
 		return nil, err
 	}
 	readByes := make([]byte, n)
+
 	copy(readByes, buf)
 	return &Source{
 		reader:         reader,
@@ -64,12 +73,7 @@ func NewSourceString(str string) (*Source, error) {
 		return nil, errors.New("source string is empty")
 	}
 	reader := bytes.NewReader([]byte(str))
-	length := len(str)
-	if length > 30 {
-		length = 30
-	}
-	buf := make([]byte, length)
-	return NewSource(reader, buf)
+	return NewSource(reader, _maxBufLen)
 }
 
 // StoreSavepoint mark current position, and start recording.
@@ -114,6 +118,20 @@ func (src *Source) Peek1() byte {
 	return 0x00 //NULL
 }
 
+// PeekAll peek all of the rest bytes
+func (src *Source) PeekAll() []byte {
+	data, _ := ioutil.ReadAll(src.reader)
+	if len(data) == 0 {
+		src.ReportError(io.EOF)
+		if src.nextIdx < len(src.readBytes) {
+			return src.readBytes[src.nextIdx:]
+		}
+		return nil
+	}
+	src.readBytes = append(src.readBytes, data...)
+	return src.readBytes[src.nextIdx:]
+}
+
 // PeekN return the first N bytes in the buffer to parse.
 // If N is longer than current buffer, it will read from reader.
 // The cursor will not be moved.
@@ -124,17 +142,12 @@ func (src *Source) PeekN(n int) []byte {
 		rest = len(src.readBytes) - src.nextIdx
 	}
 	if rest >= n {
-		t := copy(src.buf, src.readBytes[src.nextIdx:])
-		if n <= t {
-			return src.buf[:n]
-		}
-		return append(src.buf, src.readBytes[src.nextIdx+t:src.nextIdx+n]...)
+		return src.readBytes[src.nextIdx : src.nextIdx+n]
 	}
-	src.ReportError(io.ErrUnexpectedEOF)
 	//EOF
-	buf := make([]byte, rest)
-	copy(buf, src.readBytes[src.nextIdx:])
-	return buf
+	src.ReportError(io.ErrUnexpectedEOF)
+	return src.readBytes[src.nextIdx : src.nextIdx+rest]
+
 }
 
 // Read1 like ConsumeN, with N == 1
@@ -153,12 +166,9 @@ func (src *Source) ReadN(n int) []byte {
 
 // ReadAll read all bytes until EOF
 func (src *Source) ReadAll() []byte {
-	rest := src.readBytes[src.nextIdx:]
-	others, _ := ioutil.ReadAll(src.reader)
-	src.ReportError(io.EOF)
-	buf := make([]byte, 0, len(rest)+len(others))
-	buf = append(buf, rest...)
-	return append(buf, others...)
+	buf := src.PeekAll()
+	src.nextIdx += len(buf)
+	return buf
 }
 
 var errExpectedBytesNotFound = errors.New(`expected bytes not found`)

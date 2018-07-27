@@ -30,8 +30,7 @@ func TestSource_Savepoint(t *testing.T) {
 	t.Run("recursive savepoint", test.Case(func(ctx context.Context) {
 		data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
 		reader := bytes.NewReader(data)
-		buf := make([]byte, 4)
-		src, err := parse.NewSource(reader, buf)
+		src, err := parse.NewSource(reader, 4)
 		must.AssertNil(err)
 
 		// store the first 4 bytes
@@ -66,14 +65,14 @@ func TestSource_Savepoint(t *testing.T) {
 func TestSource_RollbackTo(t *testing.T) {
 	t.Run("immediate rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader("abcd"), make([]byte, 1))[0].(*parse.Source)
+			strings.NewReader("abcd"), 1)[0].(*parse.Source)
 		src.StoreSavepoint()
 		src.RollbackToSavepoint()
 		must.Equal([]byte{'a'}, src.PeekN(1))
 	}))
 	t.Run("partial consume then rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader("abcd"), make([]byte, 2))[0].(*parse.Source)
+			strings.NewReader("abcd"), 2)[0].(*parse.Source)
 		src.StoreSavepoint()
 		must.Equal(true, src.Expect1('a'))
 		must.Equal([]byte{'b', 'c'}, src.PeekN(2))
@@ -82,7 +81,7 @@ func TestSource_RollbackTo(t *testing.T) {
 	}))
 	t.Run("consume then rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader("abcd"), make([]byte, 2))[0].(*parse.Source)
+			strings.NewReader("abcd"), 2)[0].(*parse.Source)
 		src.StoreSavepoint()
 		src.ReadN(2)
 		must.Equal([]byte{'c', 'd'}, src.PeekN(2))
@@ -91,7 +90,7 @@ func TestSource_RollbackTo(t *testing.T) {
 	}))
 	t.Run("consume twice then rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
+			strings.NewReader("abcdef"), 2)[0].(*parse.Source)
 		src.StoreSavepoint()
 		src.ReadN(2)
 		src.ReadN(2)
@@ -103,7 +102,7 @@ func TestSource_RollbackTo(t *testing.T) {
 	}))
 	t.Run("rollback two savepoints", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 1))[0].(*parse.Source)
+			strings.NewReader("abcdef"), 1)[0].(*parse.Source)
 		src.StoreSavepoint()
 		src.Read1()
 		src.StoreSavepoint()
@@ -119,7 +118,7 @@ func TestSource_RollbackTo(t *testing.T) {
 func TestSource_PeekN(t *testing.T) {
 	t.Run("n smaller than current", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
+			strings.NewReader("abcdef"), 2)[0].(*parse.Source)
 		must.Equal([]byte{'a', 'b'}, src.PeekN(2))
 	}))
 	t.Run("no reader", test.Case(func(ctx context.Context) {
@@ -130,19 +129,19 @@ func TestSource_PeekN(t *testing.T) {
 	}))
 	t.Run("peek next", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
+			strings.NewReader("abcdef"), 2)[0].(*parse.Source)
 		must.Equal([]byte{'a', 'b', 'c'}, src.PeekN(3))
 		must.Equal([]byte{'a', 'b', 'c'}, src.PeekN(3))
 	}))
 	t.Run("peek next next", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
+			strings.NewReader("abcdef"), 2)[0].(*parse.Source)
 		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, src.PeekN(5))
 		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, src.PeekN(5))
 	}))
 	t.Run("peek beyond end", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
-			strings.NewReader("abc"), make([]byte, 2))[0].(*parse.Source)
+			strings.NewReader("abc"), 2)[0].(*parse.Source)
 		peeked := src.PeekN(5)
 		must.Equal([]byte{'a', 'b', 'c'}, peeked)
 		peeked = src.PeekN(5)
@@ -164,7 +163,7 @@ func TestSource_Peek1(t *testing.T) {
 		})
 	}))
 	t.Run("empty reader", test.Case(func(ctx context.Context) {
-		src, err := parse.NewSource(strings.NewReader(""), make([]byte, 1))
+		src, err := parse.NewSource(strings.NewReader(""), 1)
 		must.NotNil(err)
 		must.Panic(func() {
 			src.Peek1()
@@ -248,9 +247,9 @@ func TestSource_PeekRune(t *testing.T) {
 		must.Equal('𐍈', must.Call(src.PeekRune)[0])
 	}))
 	t.Run("rune in multiple buf", test.Case(func(ctx context.Context) {
-		src, _ := parse.NewSource(bytes.NewBufferString("h"), make([]byte, 1))
+		src, _ := parse.NewSource(bytes.NewBufferString("h"), 1)
 		must.Equal('h', must.Call(src.PeekRune)[0])
-		src, _ = parse.NewSource(bytes.NewReader([]byte{0xC2, 0xA2}), make([]byte, 1))
+		src, _ = parse.NewSource(bytes.NewReader([]byte{0xC2, 0xA2}), 1)
 		must.Equal('¢', must.Call(src.PeekRune)[0])
 		src, _ = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
 		must.Equal('€', must.Call(src.PeekRune)[0])
@@ -261,9 +260,9 @@ func TestSource_PeekRune(t *testing.T) {
 
 func TestSource_PeekUtf8(t *testing.T) {
 	t.Run("rune in multiple buf", test.Case(func(ctx context.Context) {
-		src, _ := parse.NewSource(bytes.NewBufferString("h"), make([]byte, 1))
+		src, _ := parse.NewSource(bytes.NewBufferString("h"), 1)
 		must.Equal([]byte("h"), must.Call(src.PeekUtf8)[0])
-		src, _ = parse.NewSource(bytes.NewReader([]byte{0xC2, 0xA2}), make([]byte, 1))
+		src, _ = parse.NewSource(bytes.NewReader([]byte{0xC2, 0xA2}), 1)
 		must.Equal([]byte("¢"), must.Call(src.PeekUtf8)[0])
 		src, _ = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
 		must.Equal([]byte("€"), must.Call(src.PeekUtf8)[0])
@@ -279,13 +278,13 @@ func TestSource_ReadN(t *testing.T) {
 		must.Equal([]byte{'f'}, src.PeekN(1))
 	}))
 	t.Run("read from reader", test.Case(func(ctx context.Context) {
-		src, err := parse.NewSource(strings.NewReader("abcdef"), make([]byte, 2))
+		src, err := parse.NewSource(strings.NewReader("abcdef"), 2)
 		must.Nil(err)
 		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, src.ReadN(5))
 		must.Equal([]byte{'f'}, src.PeekN(1))
 	}))
 	t.Run("should report unexpected eof when not fully read", test.Case(func(ctx context.Context) {
-		src, err := parse.NewSource(strings.NewReader("abcdef"), make([]byte, 2))
+		src, err := parse.NewSource(strings.NewReader("abcdef"), 2)
 		must.Nil(err)
 		src.ReadN(7)
 		must.Equal(io.ErrUnexpectedEOF, src.Error())
@@ -296,8 +295,7 @@ func TestConsecutivePeek(t *testing.T) {
 	t.Run("consecutive peek", test.Case(func(ctx context.Context) {
 		data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		reader := bytes.NewReader(data)
-		buf := make([]byte, 4)
-		src, err := parse.NewSource(reader, buf)
+		src, err := parse.NewSource(reader, 4)
 		must.AssertNil(err)
 		must.Equal(byte(1), src.Read1())
 		// current 还剩3
