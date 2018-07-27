@@ -45,7 +45,6 @@ type myToken struct {
 }
 
 func (token *myToken) PrefixParse(src *parse.Source) interface{} {
-	b := src.Peek1()
-	src.ConsumeN(1)
+	b := src.Read1()
 	return b
 }

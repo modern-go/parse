@@ -2,39 +2,40 @@ package test
 
 import (
 	"context"
+	"io"
+	"testing"
+
 	"github.com/modern-go/parse"
 	"github.com/modern-go/parse/read"
 	"github.com/modern-go/test"
 	"github.com/modern-go/test/must"
-	"io"
-	"testing"
 )
 
 func Test(t *testing.T) {
 	t.Run("1＋1", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString(`1+1`)
+		src, _ := parse.NewSourceString(`1+1`)
 		dst := expr.Parse(src, 0)
 		must.Equal(io.EOF, src.Error())
 		must.Equal(2, dst)
 	}))
 	t.Run("－1＋2", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString(`-1+2`)
+		src, _ := parse.NewSourceString(`-1+2`)
 		must.Equal(1, expr.Parse(src, 0))
 	}))
 	t.Run("1＋1－1", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString(`1+1-1`)
+		src, _ := parse.NewSourceString(`1+1-1`)
 		must.Equal(1, expr.Parse(src, 0))
 	}))
 	t.Run("2×3＋1", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString(`2*3+1`)
+		src, _ := parse.NewSourceString(`2*3+1`)
 		must.Equal(7, expr.Parse(src, 0))
 	}))
 	t.Run("4/2＋1", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString(`4/2+1`)
+		src, _ := parse.NewSourceString(`4/2+1`)
 		must.Equal(3, expr.Parse(src, 0))
 	}))
 	t.Run("4/（1＋1）＋2", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString(`4/(1+1)+2`)
+		src, _ := parse.NewSourceString(`4/(1+1)+2`)
 		must.Equal(4, expr.Parse(src, 0))
 	}))
 }

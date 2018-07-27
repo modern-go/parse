@@ -3,24 +3,27 @@ package parse_test
 import (
 	"bytes"
 	"context"
-	"github.com/modern-go/parse"
-	"github.com/modern-go/test"
-	"github.com/modern-go/test/must"
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/modern-go/parse"
+	"github.com/modern-go/test"
+	"github.com/modern-go/test/must"
 )
 
 func TestSource_Savepoint(t *testing.T) {
 	t.Run("rollback should delete the savepoint", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("hello")
+		src, err := parse.NewSourceString("hello")
+		must.Nil(err)
 		src.StoreSavepoint()
 		src.RollbackToSavepoint()
 		src.StoreSavepoint()
 		must.Nil(src.Error())
 	}))
 	t.Run("rollback not existing savepoint", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("hello")
+		src, err := parse.NewSourceString("hello")
+		must.Nil(err)
 		src.RollbackToSavepoint()
 		must.NotNil(src.Error())
 	}))
@@ -72,8 +75,8 @@ func TestSource_RollbackTo(t *testing.T) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcd"), make([]byte, 2))[0].(*parse.Source)
 		src.StoreSavepoint()
-		src.Expect1('a')
-		must.Equal([]byte{'b'}, src.Peek())
+		must.Equal(true, src.Expect1('a'))
+		must.Equal([]byte{'b', 'c'}, src.Peek())
 		src.RollbackToSavepoint()
 		must.Equal([]byte{'a', 'b'}, src.Peek())
 	}))
@@ -81,7 +84,7 @@ func TestSource_RollbackTo(t *testing.T) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcd"), make([]byte, 2))[0].(*parse.Source)
 		src.StoreSavepoint()
-		src.Consume()
+		src.ReadN(2)
 		must.Equal([]byte{'c', 'd'}, src.Peek())
 		src.RollbackToSavepoint()
 		must.Equal([]byte{'a', 'b'}, src.Peek())
@@ -90,21 +93,21 @@ func TestSource_RollbackTo(t *testing.T) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
 		src.StoreSavepoint()
-		src.Consume()
-		src.Consume()
+		src.ReadN(2)
+		src.ReadN(2)
 		must.Equal([]byte{'e', 'f'}, src.Peek())
 		src.RollbackToSavepoint()
 		must.Equal([]byte{'a', 'b'}, src.Peek())
-		src.Consume()
+		src.ReadN(2)
 		must.Equal([]byte{'c', 'd'}, src.Peek())
 	}))
 	t.Run("rollback two savepoints", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcdef"), make([]byte, 1))[0].(*parse.Source)
 		src.StoreSavepoint()
-		src.Consume()
+		src.Read1()
 		src.StoreSavepoint()
-		src.Consume()
+		src.Read1()
 		must.Equal([]byte{'c'}, src.Peek())
 		src.RollbackToSavepoint()
 		must.Equal([]byte{'b'}, src.Peek())
@@ -120,7 +123,8 @@ func TestSource_PeekN(t *testing.T) {
 		must.Equal([]byte{'a', 'b'}, src.PeekN(2))
 	}))
 	t.Run("no reader", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("abc")
+		src, err := parse.NewSourceString("abc")
+		must.Nil(err)
 		peeked := src.PeekN(4)
 		must.Equal("abc", string(peeked))
 	}))
@@ -148,12 +152,13 @@ func TestSource_PeekN(t *testing.T) {
 
 func TestSource_Peek1(t *testing.T) {
 	t.Run("peek1", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("abc")
+		src, err := parse.NewSourceString("abc")
+		must.Nil(err)
 		must.Equal(uint8('a'), src.Peek1())
 	}))
 	t.Run("empty string", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("")
-		must.NotNil(src.Error())
+		src, err := parse.NewSourceString("")
+		must.NotNil(err)
 		must.Panic(func() {
 			src.Peek1()
 		})
@@ -169,65 +174,77 @@ func TestSource_Peek1(t *testing.T) {
 
 func TestSource_Expect1(t *testing.T) {
 	t.Run("not match", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("h2")
-		src.Expect1('b')
-		must.NotNil(src.Error())
+		src, err := parse.NewSourceString("h2")
+		must.Nil(err)
+		must.Equal(false, src.Expect1('b'))
+		must.Nil(src.Error())
 	}))
 	t.Run("match", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("h2")
-		src.Expect1('h')
+		src, err := parse.NewSourceString("h2")
+		must.Nil(err)
+		must.Equal(true, src.Expect1('h'))
 		must.Nil(src.Error())
 	}))
 }
 
 func TestSource_Expect2(t *testing.T) {
 	t.Run("not match", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("h2b")
-		src.Expect2('h', '3')
-		must.NotNil(src.Error())
+		src, err := parse.NewSourceString("h2b")
+		must.Nil(err)
+		must.Equal(false, src.Expect2('h', '3'))
+		must.Nil(src.Error())
 	}))
 	t.Run("match", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("h2b")
-		src.Expect2('h', '2')
+		src, err := parse.NewSourceString("h2b")
+		must.Nil(err)
+		must.Equal(true, src.Expect2('h', '2'))
 		must.Nil(src.Error())
 	}))
 }
 
 func TestSource_Expect3(t *testing.T) {
 	t.Run("not match", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("h2b~")
-		src.Expect3('h', '2', 'c')
-		must.NotNil(src.Error())
+		src, err := parse.NewSourceString("h2b~")
+		must.Nil(err)
+		must.Equal(false, src.Expect3('h', '2', 'c'))
+		must.Nil(src.Error())
 	}))
 	t.Run("match", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("h2b~")
-		src.Expect3('h', '2', 'b')
+		src, err := parse.NewSourceString("h2b~")
+		must.Nil(err)
+		must.Equal(true, src.Expect3('h', '2', 'b'))
 		must.Nil(src.Error())
 	}))
 }
 
 func TestSource_Expect4(t *testing.T) {
 	t.Run("not match", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("h2bc~")
-		src.Expect4('h', '2', 'c', 'd')
-		must.NotNil(src.Error())
+		src, err := parse.NewSourceString("h2bc~")
+		must.Nil(err)
+		must.Equal(false, src.Expect4('h', '2', 'c', 'd'))
+		must.Nil(src.Error())
 	}))
 	t.Run("match", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("h2bc~")
-		src.Expect4('h', '2', 'b', 'c')
+		src, err := parse.NewSourceString("h2bc~")
+		must.Nil(err)
+		must.Equal(true, src.Expect4('h', '2', 'b', 'c'))
 		must.Nil(src.Error())
 	}))
 }
 
 func TestSource_PeekRune(t *testing.T) {
 	t.Run("rune in current buf", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("h")
+		src, err := parse.NewSourceString("h")
+		must.Nil(err)
 		must.Equal('h', must.Call(src.PeekRune)[0])
-		src = parse.NewSourceString(string([]byte{0xC2, 0xA2}))
+		src, err = parse.NewSourceString(string([]byte{0xC2, 0xA2}))
+		must.Nil(err)
 		must.Equal('¢', must.Call(src.PeekRune)[0])
-		src = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
+		src, err = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
+		must.Nil(err)
 		must.Equal('€', must.Call(src.PeekRune)[0])
-		src = parse.NewSourceString(string([]byte{0xF0, 0x90, 0x8D, 0x88}))
+		src, err = parse.NewSourceString(string([]byte{0xF0, 0x90, 0x8D, 0x88}))
+		must.Nil(err)
 		must.Equal('𐍈', must.Call(src.PeekRune)[0])
 	}))
 	t.Run("rune in multiple buf", test.Case(func(ctx context.Context) {
@@ -235,22 +252,10 @@ func TestSource_PeekRune(t *testing.T) {
 		must.Equal('h', must.Call(src.PeekRune)[0])
 		src, _ = parse.NewSource(bytes.NewReader([]byte{0xC2, 0xA2}), make([]byte, 1))
 		must.Equal('¢', must.Call(src.PeekRune)[0])
-		src = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
+		src, _ = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
 		must.Equal('€', must.Call(src.PeekRune)[0])
-		src = parse.NewSourceString(string([]byte{0xF0, 0x90, 0x8D, 0x88}))
+		src, _ = parse.NewSourceString(string([]byte{0xF0, 0x90, 0x8D, 0x88}))
 		must.Equal('𐍈', must.Call(src.PeekRune)[0])
-	}))
-}
-
-func TestSource_SetBuffer(t *testing.T) {
-	t.Run("set buffer to new slice to avoid current buffer being reused", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		peeked := src.Peek()
-		// without SetBuffer, peeked will change
-		src.SetBuffer(make([]byte, 2))
-		src.Consume()
-		must.Equal([]byte{'a', 'b'}, peeked)
 	}))
 }
 
@@ -260,86 +265,16 @@ func TestSource_PeekUtf8(t *testing.T) {
 		must.Equal([]byte("h"), must.Call(src.PeekUtf8)[0])
 		src, _ = parse.NewSource(bytes.NewReader([]byte{0xC2, 0xA2}), make([]byte, 1))
 		must.Equal([]byte("¢"), must.Call(src.PeekUtf8)[0])
-		src = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
+		src, _ = parse.NewSourceString(string([]byte{0xE2, 0x82, 0xAC}))
 		must.Equal([]byte("€"), must.Call(src.PeekUtf8)[0])
-		src = parse.NewSourceString(string([]byte{0xF0, 0x90, 0x8D, 0x88}))
+		src, _ = parse.NewSourceString(string([]byte{0xF0, 0x90, 0x8D, 0x88}))
 		must.Equal([]byte("𐍈"), must.Call(src.PeekUtf8)[0])
-	}))
-}
-
-func TestSource_ConsumeN(t *testing.T) {
-	t.Run("consume partial current", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		src.ConsumeN(1)
-		must.Equal([]byte{'b'}, src.Peek())
-	}))
-	t.Run("consume all current", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		src.ConsumeN(2)
-		must.Equal([]byte{'c', 'd'}, src.Peek())
-	}))
-	t.Run("consume two buf", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		src.ConsumeN(3)
-		must.Equal([]byte{'d'}, src.Peek())
-	}))
-	t.Run("consume all", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		src.ConsumeN(6)
-		must.Equal([]byte{}, src.Peek())
-		must.Equal(io.EOF, src.Error())
-	}))
-	t.Run("consume beyond end", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		src.ConsumeN(7)
-		must.Equal([]byte{}, src.Peek())
-		must.Equal(io.ErrUnexpectedEOF, src.Error())
-	}))
-}
-
-func TestSource_CopyN(t *testing.T) {
-	t.Run("consume partial current", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a'}, src.CopyN(1))
-		must.Equal([]byte{'b'}, src.Peek())
-	}))
-	t.Run("consume all current", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b'}, src.CopyN(2))
-		must.Equal([]byte{'c', 'd'}, src.Peek())
-	}))
-	t.Run("consume two buf", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b', 'c'}, src.CopyN(3))
-		must.Equal([]byte{'d'}, src.Peek())
-	}))
-	t.Run("consume all", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b', 'c', 'd', 'e', 'f'}, src.CopyN(6))
-		must.Equal([]byte{}, src.Peek())
-		must.Equal(io.EOF, src.Error())
-	}))
-	t.Run("consume beyond end", test.Case(func(ctx context.Context) {
-		src := must.Call(parse.NewSource,
-			strings.NewReader("abcdef"), make([]byte, 2))[0].(*parse.Source)
-		must.Equal([]byte{'a', 'b', 'c', 'd', 'e', 'f'}, src.CopyN(7))
-		must.Equal([]byte{}, src.Peek())
-		must.Equal(io.ErrUnexpectedEOF, src.Error())
 	}))
 }
 
 func TestSource_ReadN(t *testing.T) {
 	t.Run("read from buffer", test.Case(func(ctx context.Context) {
-		src := parse.NewSourceString("abcdef")
+		src, _ := parse.NewSourceString("abcdef")
 		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, src.ReadN(5))
 		must.Equal([]byte{'f'}, src.Peek())
 	}))
@@ -357,7 +292,7 @@ func TestSource_ReadN(t *testing.T) {
 	}))
 }
 
-func TestPeek(t *testing.T) {
+func TestConsecutivePeek(t *testing.T) {
 	t.Run("consecutive peek", test.Case(func(ctx context.Context) {
 		data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		reader := bytes.NewReader(data)
@@ -372,5 +307,15 @@ func TestPeek(t *testing.T) {
 		must.Equal(expect, src.PeekN(4))
 		must.Equal(expect, src.PeekN(4))
 		must.Equal(expect, src.PeekN(4))
+	}))
+}
+
+func TestReadAll(t *testing.T) {
+	t.Run("partially consume and read all of the rest", test.Case(func(ctx context.Context) {
+		src, _ := parse.NewSourceString("hello world")
+		must.Equal(true, src.Expect1('h'))
+		must.Equal(true, src.Expect1('e'))
+		must.Equal([]byte("llo world"), src.ReadAll())
+		must.Equal(io.EOF, src.Error())
 	}))
 }

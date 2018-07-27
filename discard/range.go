@@ -1,8 +1,9 @@
 package discard
 
 import (
-	"github.com/modern-go/parse"
 	"unicode"
+
+	"github.com/modern-go/parse"
 )
 
 // UnicodeRange discard the runes until found one not matching the range table
@@ -13,7 +14,7 @@ func UnicodeRange(src *parse.Source, table *unicode.RangeTable) int {
 		if !unicode.Is(table, r) {
 			return count
 		}
-		src.ConsumeN(n)
+		src.ReadN(n)
 		count += n
 	}
 	return count
@@ -30,7 +31,7 @@ func UnicodeRanges(src *parse.Source, includes []*unicode.RangeTable, excludes [
 		if len(includes) > 0 && !matchRanges(includes, r) {
 			return count
 		}
-		src.ConsumeN(n)
+		src.ReadN(n)
 		count += n
 	}
 	return count
