@@ -99,28 +99,6 @@ func (src *Source) RollbackToSavepoint() {
 	src.nextIdx = src.savepointStack.Pop()
 }
 
-// Peek return the current buffer ready to be parsed.
-// The buffer will have at least one byte.
-func (src *Source) Peek() []byte {
-	rest := len(src.readBytes) - src.nextIdx
-	if rest >= len(src.buf) {
-		copy(src.buf, src.readBytes[src.nextIdx:])
-		return src.buf[:]
-	}
-	// consume more
-	for src.Error() == nil && rest < len(src.buf) {
-		src.consume()
-		rest = len(src.readBytes) - src.nextIdx
-	}
-	if rest >= len(src.buf) {
-		copy(src.buf, src.readBytes[src.nextIdx:])
-		return src.buf[:]
-	}
-	// EOF
-	n := copy(src.buf, src.readBytes[src.nextIdx:])
-	return src.buf[:n]
-}
-
 // Peek1 return the first byte in the buffer to parse.
 func (src *Source) Peek1() byte {
 	if src.nextIdx < len(src.readBytes) {

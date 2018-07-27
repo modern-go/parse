@@ -69,25 +69,25 @@ func TestSource_RollbackTo(t *testing.T) {
 			strings.NewReader("abcd"), make([]byte, 1))[0].(*parse.Source)
 		src.StoreSavepoint()
 		src.RollbackToSavepoint()
-		must.Equal([]byte{'a'}, src.Peek())
+		must.Equal([]byte{'a'}, src.PeekN(1))
 	}))
 	t.Run("partial consume then rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcd"), make([]byte, 2))[0].(*parse.Source)
 		src.StoreSavepoint()
 		must.Equal(true, src.Expect1('a'))
-		must.Equal([]byte{'b', 'c'}, src.Peek())
+		must.Equal([]byte{'b', 'c'}, src.PeekN(2))
 		src.RollbackToSavepoint()
-		must.Equal([]byte{'a', 'b'}, src.Peek())
+		must.Equal([]byte{'a', 'b'}, src.PeekN(2))
 	}))
 	t.Run("consume then rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
 			strings.NewReader("abcd"), make([]byte, 2))[0].(*parse.Source)
 		src.StoreSavepoint()
 		src.ReadN(2)
-		must.Equal([]byte{'c', 'd'}, src.Peek())
+		must.Equal([]byte{'c', 'd'}, src.PeekN(2))
 		src.RollbackToSavepoint()
-		must.Equal([]byte{'a', 'b'}, src.Peek())
+		must.Equal([]byte{'a', 'b'}, src.PeekN(2))
 	}))
 	t.Run("consume twice then rollback", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
@@ -95,11 +95,11 @@ func TestSource_RollbackTo(t *testing.T) {
 		src.StoreSavepoint()
 		src.ReadN(2)
 		src.ReadN(2)
-		must.Equal([]byte{'e', 'f'}, src.Peek())
+		must.Equal([]byte{'e', 'f'}, src.PeekN(2))
 		src.RollbackToSavepoint()
-		must.Equal([]byte{'a', 'b'}, src.Peek())
+		must.Equal([]byte{'a', 'b'}, src.PeekN(2))
 		src.ReadN(2)
-		must.Equal([]byte{'c', 'd'}, src.Peek())
+		must.Equal([]byte{'c', 'd'}, src.PeekN(2))
 	}))
 	t.Run("rollback two savepoints", test.Case(func(ctx context.Context) {
 		src := must.Call(parse.NewSource,
@@ -108,11 +108,11 @@ func TestSource_RollbackTo(t *testing.T) {
 		src.Read1()
 		src.StoreSavepoint()
 		src.Read1()
-		must.Equal([]byte{'c'}, src.Peek())
+		must.Equal([]byte{'c'}, src.PeekN(1))
 		src.RollbackToSavepoint()
-		must.Equal([]byte{'b'}, src.Peek())
+		must.Equal([]byte{'b'}, src.PeekN(1))
 		src.RollbackToSavepoint()
-		must.Equal([]byte{'a'}, src.Peek())
+		must.Equal([]byte{'a'}, src.PeekN(1))
 	}))
 }
 
@@ -276,13 +276,13 @@ func TestSource_ReadN(t *testing.T) {
 	t.Run("read from buffer", test.Case(func(ctx context.Context) {
 		src, _ := parse.NewSourceString("abcdef")
 		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, src.ReadN(5))
-		must.Equal([]byte{'f'}, src.Peek())
+		must.Equal([]byte{'f'}, src.PeekN(1))
 	}))
 	t.Run("read from reader", test.Case(func(ctx context.Context) {
 		src, err := parse.NewSource(strings.NewReader("abcdef"), make([]byte, 2))
 		must.Nil(err)
 		must.Equal([]byte{'a', 'b', 'c', 'd', 'e'}, src.ReadN(5))
-		must.Equal([]byte{'f'}, src.Peek())
+		must.Equal([]byte{'f'}, src.PeekN(1))
 	}))
 	t.Run("should report unexpected eof when not fully read", test.Case(func(ctx context.Context) {
 		src, err := parse.NewSource(strings.NewReader("abcdef"), make([]byte, 2))

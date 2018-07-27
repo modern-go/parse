@@ -41,6 +41,6 @@ func TestUnicodeRanges(t *testing.T) {
 			unicode.White_Space,
 			unicode.Han,
 		}, nil))
-		must.Equal([]byte{'a', 'b'}, src.Peek())
+		must.Equal([]byte{'a', 'b'}, src.PeekN(2))
 	}))
 }
