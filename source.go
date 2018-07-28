@@ -9,18 +9,23 @@ import (
 )
 
 type stack struct {
-	buf []int
+	buf []breakInfo
 }
 
-func (s *stack) Push(breakPoint int) {
-	s.buf = append(s.buf, breakPoint)
+type breakInfo struct {
+	nextIdx int
+	err     error
 }
 
-func (s *stack) Pop() int {
+func (s *stack) Push(info breakInfo) {
+	s.buf = append(s.buf, info)
+}
+
+func (s *stack) Pop() breakInfo {
 	last := len(s.buf) - 1
-	breakPoint := s.buf[last]
+	brkInfo := s.buf[last]
 	s.buf = s.buf[:last]
-	return breakPoint
+	return brkInfo
 }
 
 func (s *stack) Empty() bool {
@@ -79,7 +84,7 @@ func NewSourceString(str string) (*Source, error) {
 // StoreSavepoint mark current position, and start recording.
 // Later we can rollback to current position.
 func (src *Source) StoreSavepoint() {
-	src.savepointStack.Push(src.nextIdx)
+	src.savepointStack.Push(breakInfo{nextIdx: src.nextIdx, err: src.Error()})
 }
 
 var errNoSavepoint = errors.New("no savepoint in stack")
@@ -100,7 +105,9 @@ func (src *Source) RollbackToSavepoint() {
 		src.ReportError(errNoSavepoint)
 		return
 	}
-	src.nextIdx = src.savepointStack.Pop()
+	brkInfo := src.savepointStack.Pop()
+	src.nextIdx = brkInfo.nextIdx
+	src.err = brkInfo.err
 }
 
 // Peek1 return the first byte in the buffer to parse.
