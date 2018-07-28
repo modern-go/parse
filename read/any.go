@@ -18,3 +18,36 @@ func Until1(src *parse.Source, b1 byte) []byte {
 	}
 	return buf
 }
+
+// AnyExcept1 read bytes until EOF, ignore b1
+func AnyExcept1(src *parse.Source, b1 byte) []byte {
+	var buf []byte
+	b := src.Read1()
+	for src.Error() == nil {
+		if b != b1 {
+			buf = append(buf, b)
+		}
+		b = src.Read1()
+	}
+	return buf
+}
+
+// AnyExcepts read bytes until EOF, ignore bs
+func AnyExcepts(src *parse.Source, bs []byte) []byte {
+	var buf []byte
+	b := src.Read1()
+	for src.Error() == nil {
+		found := false
+		for _, b1 := range bs {
+			if b1 == b {
+				found = true
+				break
+			}
+		}
+		if !found {
+			buf = append(buf, b)
+		}
+		b = src.Read1()
+	}
+	return buf
+}

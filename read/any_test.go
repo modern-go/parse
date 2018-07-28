@@ -27,3 +27,16 @@ func TestUntil1(t *testing.T) {
 		must.Nil(src.FatalError())
 	}))
 }
+
+func TestExcept(t *testing.T) {
+	t.Run("except one", test.Case(func(ctx context.Context) {
+		src, _ := parse.NewSourceString("hello world 1234 bbb")
+		data := read.AnyExcept1(src, ' ')
+		must.Equal("helloworld1234bbb", string(data))
+	}))
+	t.Run("except multi", test.Case(func(ctx context.Context) {
+		src, _ := parse.NewSourceString("hello world 1234 bbb")
+		data := read.AnyExcepts(src, []byte{' ', 'o', 'b'})
+		must.Equal("hellwrld1234", string(data))
+	}))
+}
