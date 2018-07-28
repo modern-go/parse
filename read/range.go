@@ -1,8 +1,9 @@
 package read
 
 import (
-	"github.com/modern-go/parse"
 	"unicode"
+
+	"github.com/modern-go/parse"
 )
 
 // UnicodeRange read unicode until one not in table,
@@ -16,14 +17,14 @@ func UnicodeRange(src *parse.Source, table *unicode.RangeTable) []byte {
 			break
 		}
 		length += n
-		src.ConsumeN(n)
+		src.ReadN(n)
 	}
 	if src.FatalError() != nil {
 		src.DeleteSavepoint()
 		return nil
 	}
 	src.RollbackToSavepoint()
-	return src.CopyN(length)
+	return src.PeekN(length)
 }
 
 // UnicodeRanges read unicode until one not in included table or encounteredd one in excluded table
@@ -39,14 +40,14 @@ func UnicodeRanges(src *parse.Source, includes []*unicode.RangeTable, excludes [
 			break
 		}
 		length += n
-		src.ConsumeN(n)
+		src.ReadN(n)
 	}
 	if src.FatalError() != nil {
 		src.DeleteSavepoint()
 		return nil
 	}
 	src.RollbackToSavepoint()
-	return src.CopyN(length)
+	return src.PeekN(length)
 }
 
 func matchRanges(ranges []*unicode.RangeTable, r rune) bool {

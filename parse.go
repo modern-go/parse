@@ -8,7 +8,10 @@ import (
 
 // String parse the string with provided lexer
 func String(input string, lexer Lexer) (interface{}, error) {
-	src := NewSourceString(input)
+	src, err := NewSourceString(input)
+	if nil != err {
+		return nil, err
+	}
 	left := Parse(src, lexer, 0)
 	if src.Error() != nil {
 		if src.Error() == io.EOF {
