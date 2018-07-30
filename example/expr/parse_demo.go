@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/modern-go/parse"
-	"github.com/modern-go/parse/read"
 	"github.com/modern-go/test"
 	"github.com/modern-go/test/must"
 )
@@ -98,7 +97,8 @@ type valueToken struct {
 }
 
 func (token *valueToken) PrefixParse(src *parse.Source) interface{} {
-	return read.Int(src)
+	return 0
+	//return read.Int(src)
 }
 
 type plusToken struct {

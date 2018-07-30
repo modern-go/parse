@@ -295,3 +295,8 @@ func (src *Source) FatalError() error {
 	}
 	return src.err
 }
+
+// ResetError clear the error
+func (src *Source) ResetError() {
+	src.err = nil
+}
