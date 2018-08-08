@@ -21,8 +21,8 @@ func UnicodeSpace(src *parse.Source) int {
 	return count
 }
 
-// Trim read bytes until finding a byte not belong to target
-func Trim(src *parse.Source, target []byte) int {
+// Skip read bytes until finding a byte not belong to the target
+func Skip(src *parse.Source, target []byte) int {
 	if src == nil {
 		return 0
 	}
@@ -47,5 +47,5 @@ func Trim(src *parse.Source, target []byte) int {
 
 // Space reads consecutive space(\t \n \v \f \r ' ') and returns the space number
 func Space(src *parse.Source) int {
-	return Trim(src, []byte{'\t', '\n', '\v', '\f', '\r', ' '})
+	return Skip(src, []byte{'\t', '\n', '\v', '\f', '\r', ' '})
 }
