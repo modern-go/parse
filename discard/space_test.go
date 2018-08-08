@@ -25,3 +25,20 @@ func TestUnicodeSpace(t *testing.T) {
 		must.Equal([]byte{'a'}, src.PeekN(1))
 	}))
 }
+
+func TestSpace(t *testing.T) {
+	t.Run("ignore consecutive space", test.Case(func(ctx context.Context) {
+		src, err := parse.NewSourceString("\t\r\n\f\v  value\r\n")
+		must.Nil(err)
+		count := discard.Space(src)
+		must.Equal(7, count)
+		must.Equal("value", string(src.ReadN(5)))
+	}))
+	t.Run("no space", test.Case(func(ctx context.Context) {
+		src, err := parse.NewSourceString("v  alue\r\n")
+		must.Nil(err)
+		count := discard.Space(src)
+		must.Equal(0, count)
+		must.Equal(byte('v'), src.Peek1())
+	}))
+}

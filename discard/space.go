@@ -20,3 +20,8 @@ func UnicodeSpace(src *parse.Source) int {
 	}
 	return count
 }
+
+// Space reads consecutive space(\t \n \v \f \r ' ') and returns the space number
+func Space(src *parse.Source) int {
+	return Range(src, []byte{'\t', '\n', '\v', '\f', '\r', ' '})
+}

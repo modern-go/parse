@@ -44,3 +44,12 @@ func TestUnicodeRanges(t *testing.T) {
 		must.Equal([]byte{'a', 'b'}, src.PeekN(2))
 	}))
 }
+
+func TestRane(t *testing.T) {
+	t.Run("ignore consecutive chars", test.Case(func(ctx context.Context) {
+		src, err := parse.NewSourceString("aaaaabckey:  value\r\n")
+		must.Nil(err)
+		count := discard.Range(src, []byte{'a', 'b', 'c'})
+		must.Equal(7, count)
+	}))
+}
