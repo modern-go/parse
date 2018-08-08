@@ -26,15 +26,6 @@ func TestUnicodeSpace(t *testing.T) {
 	}))
 }
 
-func TestSkip(t *testing.T) {
-	t.Run("ignore consecutive chars", test.Case(func(ctx context.Context) {
-		src, err := parse.NewSourceString("aaaaabckey:  value\r\n")
-		must.Nil(err)
-		count := discard.Skip(src, []byte{'a', 'b', 'c'})
-		must.Equal(7, count)
-	}))
-}
-
 func TestSpace(t *testing.T) {
 	t.Run("ignore consecutive space", test.Case(func(ctx context.Context) {
 		src, err := parse.NewSourceString("\t\r\n\f\v  value\r\n")

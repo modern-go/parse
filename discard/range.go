@@ -45,3 +45,28 @@ func matchRanges(ranges []*unicode.RangeTable, r rune) bool {
 	}
 	return false
 }
+
+// Range discard the bytes until found one not matching the range table
+// it returns how many bytes it discard
+func Range(src *parse.Source, target []byte) int {
+	if src == nil {
+		return 0
+	}
+	count := 0
+	for src.Error() == nil {
+		b := src.Peek1()
+		found := false
+		for _, t := range target {
+			if b == t {
+				found = true
+				break
+			}
+		}
+		if !found {
+			break
+		}
+		count++
+		src.Read1()
+	}
+	return count
+}
