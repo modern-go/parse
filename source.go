@@ -162,6 +162,11 @@ func (src *Source) PeekN(n int) []byte {
 
 }
 
+// ReadByte is the same as Read1, just for implementing the io.ByteReader interface
+func (src *Source) ReadByte() (byte, error) {
+	return src.Read1(), src.Error()
+}
+
 // Read1 like ConsumeN, with N == 1
 func (src *Source) Read1() byte {
 	b := src.Peek1()
