@@ -112,6 +112,9 @@ func (src *Source) RollbackToSavepoint() {
 
 // Peek1 return the first byte in the buffer to parse.
 func (src *Source) Peek1() byte {
+	if src.Error() != nil {
+		return 0x0
+	}
 	if src.nextIdx < len(src.readBytes) {
 		return src.readBytes[src.nextIdx]
 	}
@@ -122,7 +125,7 @@ func (src *Source) Peek1() byte {
 
 	// EOF
 	src.ReportError(io.ErrUnexpectedEOF)
-	return 0x00 //NULL
+	return 0x0 //NULL
 }
 
 // Peek peeks as many bytes as possible without triggering consume
@@ -133,14 +136,9 @@ func (src *Source) Peek() []byte {
 // PeekAll peek all of the rest bytes
 func (src *Source) PeekAll() []byte {
 	data, _ := ioutil.ReadAll(src.reader)
-	if len(data) == 0 {
-		src.ReportError(io.EOF)
-		if src.nextIdx < len(src.readBytes) {
-			return src.readBytes[src.nextIdx:]
-		}
-		return nil
+	if len(data) > 0 {
+		src.readBytes = append(src.readBytes, data...)
 	}
-	src.readBytes = append(src.readBytes, data...)
 	return src.readBytes[src.nextIdx:]
 }
 
@@ -158,8 +156,7 @@ func (src *Source) PeekN(n int) []byte {
 	}
 	//EOF
 	src.ReportError(io.ErrUnexpectedEOF)
-	return src.readBytes[src.nextIdx : src.nextIdx+rest]
-
+	return src.readBytes[src.nextIdx:]
 }
 
 // ReadByte is the same as Read1, just for implementing the io.ByteReader interface
@@ -169,13 +166,21 @@ func (src *Source) ReadByte() (byte, error) {
 
 // Read1 like ConsumeN, with N == 1
 func (src *Source) Read1() byte {
+	if src.Error() != nil {
+		return 0x0
+	}
 	b := src.Peek1()
-	src.nextIdx++
+	if src.Error() == nil {
+		src.nextIdx++
+	}
 	return b
 }
 
 // ReadN read N bytes and move cursor forward
 func (src *Source) ReadN(n int) []byte {
+	if src.Error() != nil {
+		return nil
+	}
 	buf := src.PeekN(n)
 	src.nextIdx += len(buf)
 	return buf
