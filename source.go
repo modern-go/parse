@@ -136,14 +136,9 @@ func (src *Source) Peek() []byte {
 // PeekAll peek all of the rest bytes
 func (src *Source) PeekAll() []byte {
 	data, _ := ioutil.ReadAll(src.reader)
-	if len(data) == 0 {
-		src.ReportError(io.EOF)
-		if src.nextIdx < len(src.readBytes) {
-			return src.readBytes[src.nextIdx:]
-		}
-		return nil
+	if len(data) > 0 {
+		src.readBytes = append(src.readBytes, data...)
 	}
-	src.readBytes = append(src.readBytes, data...)
 	return src.readBytes[src.nextIdx:]
 }
 

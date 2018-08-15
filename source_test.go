@@ -314,7 +314,7 @@ func TestReadAll(t *testing.T) {
 		must.Equal(true, src.Expect1('h'))
 		must.Equal(true, src.Expect1('e'))
 		must.Equal([]byte("llo world"), src.ReadAll())
-		must.Equal(io.EOF, src.Error())
+		must.Nil(src.Error())
 	}))
 }
 
