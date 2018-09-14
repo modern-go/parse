@@ -233,7 +233,7 @@ func (src *Source) Expect3(b1, b2, b3 byte) bool {
 	return false
 }
 
-// Expect4 like ConsumeN, with N == 4.
+// Expect4 like ReadN, with N == 4.
 // bytes will not be consumed if not match
 func (src *Source) Expect4(b1, b2, b3, b4 byte) bool {
 	buf := src.PeekN(4)
@@ -247,7 +247,23 @@ func (src *Source) Expect4(b1, b2, b3, b4 byte) bool {
 	return false
 }
 
-// consume will discard whole current buffer, and read next buffer.
+// ExpectN like ReadN.
+// bytes will not be consumed if not match
+func (src *Source) Expect(expect []byte) bool {
+	buf := src.PeekN(len(expect))
+	if len(buf) < len(expect) {
+		return false
+	}
+	for i, e := range expect {
+		if buf[i] != e {
+			return false
+		}
+	}
+	src.nextIdx += len(expect)
+	return true
+}
+
+// consume will fill the readBytes with more bytes from reader
 func (src *Source) consume() {
 	if src.reader == nil {
 		src.ReportError(io.EOF)

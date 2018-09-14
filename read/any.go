@@ -19,6 +19,21 @@ func Until1(src *parse.Source, b1 byte) []byte {
 	return buf
 }
 
+// Until2 read any byte except b1 or b2.
+// If b1 not found, report error.
+func Until2(src *parse.Source, b1 byte, b2 byte) []byte {
+	var buf []byte
+	for src.Error() == nil {
+		b := src.Peek1()
+		if b == b1 || b == b2 || src.Error() != nil {
+			break
+		}
+		src.Read1()
+		buf = append(buf, b)
+	}
+	return buf
+}
+
 // AnyExcept1 read bytes until EOF, ignore b1
 func AnyExcept1(src *parse.Source, b1 byte) []byte {
 	var buf []byte
